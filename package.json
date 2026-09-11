@@ -1,0 +1,26 @@
+{
+  "name": "traceandback",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "AI-native development timeline with safe Git recovery",
+  "engines": {
+    "node": ">=24"
+  },
+  "packageManager": "pnpm@11.19.0",
+  "scripts": {
+    "check": "tsc --noEmit",
+    "start": "tsx src/cli.ts",
+    "test": "node --import tsx --test test/index.test.ts",
+    "trace": "tsx src/cli.ts"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/server": "^2.0.0",
+    "zod": "^4.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "tsx": "^4.20.0",
+    "typescript": "^6.0.0"
+  }
+}
