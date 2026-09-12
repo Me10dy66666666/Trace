@@ -12,7 +12,8 @@
     "check": "tsc --noEmit",
     "start": "tsx src/cli.ts",
     "test": "node --import tsx --test test/index.test.ts",
-    "trace": "tsx src/cli.ts"
+    "trace": "tsx src/cli.ts",
+    "prototype": "node prototype/server.mjs"
   },
   "dependencies": {
     "@modelcontextprotocol/server": "^2.0.0",

@@ -1,0 +1,21 @@
+{
+  "name": "traceandback",
+  "version": "0.1.0+codex.20260912082602",
+  "description": "Project-scoped Trace Graph with safe Git recovery for AI coding work.",
+  "author": {
+    "name": "TraceAndBack"
+  },
+  "mcpServers": "./.mcp.json",
+  "interface": {
+    "displayName": "TraceAndBack",
+    "shortDescription": "Open a project-scoped Trace Graph in Codex.",
+    "longDescription": "TraceAndBack shows Git versions, AI context, and safe local branch recovery without mixing projects.",
+    "developerName": "TraceAndBack",
+    "category": "Productivity",
+    "capabilities": [
+      "Interactive",
+      "Write"
+    ],
+    "defaultPrompt": "Open the Trace Graph for this project."
+  }
+}

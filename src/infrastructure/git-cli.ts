@@ -10,6 +10,7 @@ import type {
   CreateGitWorktreeInput,
   LocatedGitCheckpoint,
   FindGitWorktreeForResumeInput,
+  GitCommitSummary,
   GitAdapter,
   WorktreeEnvironment
 } from "../domain/git-adapter.js";
@@ -77,6 +78,33 @@ export class GitCli implements GitAdapter {
       }
     }
     return [...paths];
+  }
+
+  public async listCommits(repositoryPath: string, limit: number): Promise<readonly GitCommitSummary[]> {
+    const safeLimit = Math.min(Math.max(limit, 1), 100);
+    const result = await this.run(repositoryPath, [
+      "log",
+      "--first-parent",
+      `--max-count=${safeLimit}`,
+      "--format=%H%x00%P%x00%cI%x00%s%x1e"
+    ]);
+
+    return result.stdout
+      .split("\x1e")
+      .map((record) => record.trim())
+      .filter((record) => record !== "")
+      .map((record) => {
+        const [commit, parents, createdAt, title] = record.split("\x00");
+        if (commit === undefined || parents === undefined || createdAt === undefined || title === undefined) {
+          throw new Error("Git returned malformed commit history output.");
+        }
+        return {
+          commit,
+          parentCommit: parents.split(" ")[0] || null,
+          title,
+          createdAt
+        };
+      });
   }
 
   public async createCheckpoint(input: CreateGitCheckpointInput): Promise<string> {

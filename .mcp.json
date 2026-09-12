@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "traceandback": {
+      "command": "pnpm",
+      "args": ["start"]
+    }
+  }
+}

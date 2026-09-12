@@ -512,6 +512,63 @@ export class TraceService {
     }
   }
 
+  public async getGitHistory(
+    input: Readonly<{ repositoryId: string; limit: number }>
+  ): Promise<TraceHistoryPage> {
+    const repository = this.requireRepository(input.repositoryId);
+    const limit = Math.min(Math.max(input.limit, 1), 100);
+    const commits = await this.dependencies.git.listCommits(repository.repositoryPath, limit);
+    const existingByCommit = new Map<string, TraceNode | null>();
+    const nodeIdByCommit = new Map<string, string>();
+
+    for (const commit of commits) {
+      const existing = this.dependencies.store.findNodeByCommit(repository.id, commit.commit);
+      existingByCommit.set(commit.commit, existing);
+      nodeIdByCommit.set(commit.commit, existing?.id ?? `node_${randomUUID()}`);
+    }
+
+    for (let index = commits.length - 1; index >= 0; index -= 1) {
+      const commit = commits[index];
+      if (commit === undefined || existingByCommit.get(commit.commit) !== null) {
+        continue;
+      }
+      const olderCommit = commits[index + 1];
+      const gitParentNodeId = commit.parentCommit === null
+        ? null
+        : nodeIdByCommit.get(commit.parentCommit)
+          ?? this.dependencies.store.findNodeByCommit(repository.id, commit.parentCommit)?.id
+          ?? null;
+      this.dependencies.store.createNode({
+        id: nodeIdByCommit.get(commit.commit) ?? `node_${randomUUID()}`,
+        repositoryId: repository.id,
+        commit: commit.commit,
+        nodeType: "commit",
+        title: commit.title,
+        gitParentNodeId,
+        chronologicalParentNodeId: olderCommit === undefined
+          ? null
+          : nodeIdByCommit.get(olderCommit.commit) ?? null,
+        createdAt: commit.createdAt
+      });
+    }
+
+    return {
+      nodes: commits.map((commit, index) => ({
+        id: nodeIdByCommit.get(commit.commit) ?? commit.commit,
+        commit: commit.commit,
+        title: commit.title,
+        createdAt: commit.createdAt,
+        gitParent: commit.parentCommit === null
+          ? null
+          : nodeIdByCommit.get(commit.parentCommit) ?? null,
+        chronologicalParent: commits[index + 1] === undefined
+          ? null
+          : nodeIdByCommit.get(commits[index + 1]?.commit ?? "") ?? null
+      })),
+      nextCursor: null
+    };
+  }
+
   private async createCheckpointForResume(
     repository: RegisteredRepository,
     operationId: string,

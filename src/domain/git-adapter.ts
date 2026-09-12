@@ -30,8 +30,16 @@ export type LocatedGitCheckpoint = Readonly<{
   parentCommit: string | null;
 }>;
 
+export type GitCommitSummary = Readonly<{
+  commit: string;
+  parentCommit: string | null;
+  title: string;
+  createdAt: string;
+}>;
+
 export interface GitAdapter {
   inspectRepository(repositoryPath: string): Promise<RepositoryInspection>;
+  listCommits(repositoryPath: string, limit: number): Promise<readonly GitCommitSummary[]>;
   listVisibleChanges(repositoryPath: string): Promise<readonly string[]>;
   createCheckpoint(input: CreateGitCheckpointInput): Promise<string>;
   findCheckpointByOperationId(repositoryPath: string, operationId: string): Promise<LocatedGitCheckpoint | null>;
