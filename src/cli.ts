@@ -48,7 +48,7 @@ async function serve(): Promise<void> {
   const handle = serveStdio(
     () => createTraceMcpServer(trace),
     {
-      legacy: "reject",
+      legacy: "serve",
       onerror: (error) => process.stderr.write(`TraceAndBack MCP error: ${error.message}\n`)
     }
   );
