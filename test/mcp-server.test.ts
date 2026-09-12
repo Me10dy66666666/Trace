@@ -207,7 +207,15 @@ test("renders embedded Trace cards from the registered repository Git history", 
       text?: string;
     }>[];
     assert.equal(resources[0]?.mimeType, "text/html;profile=mcp-app");
-    assert.match(resources[0]?.text ?? "", /ui\/notifications\/tool-result/);
+    const ui = resources[0]?.text ?? "";
+    assert.match(ui, /ui\/notifications\/tool-result/);
+    assert.match(ui, /class="node-card/);
+    assert.match(ui, /class="graph-edges"/);
+    assert.match(ui, /AI Discussion Summary/);
+    assert.match(ui, /Key Decisions/);
+    assert.match(ui, /Changed Files/);
+    assert.match(ui, /sendFollowUpMessage/);
+    assert.doesNotMatch(ui, /class="timeline"/);
 
     const rendered = await client.request("tools/call", {
       name: "trace.render_graph",
