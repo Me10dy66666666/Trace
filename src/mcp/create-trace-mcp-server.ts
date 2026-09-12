@@ -112,7 +112,7 @@ export function createTraceMcpServer(trace: TraceService): McpServer {
       description: "Safely commit visible working-tree changes as a recoverable local Trace Node.",
       inputSchema: z.object({
         repositoryId: z.string().min(1),
-        reason: z.string().min(1),
+        reason: z.string().trim().min(1).default("automatic checkpoint"),
         includeUntracked: z.literal(true).default(true),
         operationId: z.string().min(1).optional()
       }),

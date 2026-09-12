@@ -87,7 +87,6 @@ test("creates a checkpoint for an existing host through the real stdio CLI", asy
       name: "trace.create_checkpoint",
       arguments: {
         repositoryId: status.repositoryId,
-        reason: "capture_java_fixture",
         operationId: "cli-mcp-checkpoint"
       }
     });
@@ -97,6 +96,8 @@ test("creates a checkpoint for an existing host through the real stdio CLI", asy
     ) as Readonly<{ created: boolean; commit: string | null }>;
     assert.equal(checkpoint.created, true);
     assert.match(checkpoint.commit ?? "", /^[0-9a-f]{40}$/);
+    const commitMessage = await execFile("git", ["-C", repositoryPath, "show", "-s", "--format=%s", checkpoint.commit ?? ""]);
+    assert.equal(commitMessage.stdout.trim(), "trace: checkpoint automatic checkpoint");
   } finally {
     child.stdin.end();
     await new Promise<void>((resolve) => child.once("close", () => resolve()));
