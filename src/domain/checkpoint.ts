@@ -28,6 +28,7 @@ export type ResumeOperationIntent = Readonly<{
   targetCommit: string;
   branchName: string;
   worktreeName: string;
+  strategy?: "branch" | "worktree";
 }>;
 
 export type OperationIntent = ResumeOperationIntent | null;

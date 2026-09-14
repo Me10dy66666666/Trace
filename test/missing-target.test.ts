@@ -55,7 +55,8 @@ test("fails before checkpointing when a resume target commit is unavailable", as
       () => service.resumeFrom({
         checkpointCurrent: true,
         nodeId: "node_missing_target",
-        operationId: "missing-target-resume"
+        operationId: "missing-target-resume",
+        strategy: "worktree"
       }),
       (error: unknown) => error instanceof TraceError && error.code === "VERIFY_FAILED"
     );

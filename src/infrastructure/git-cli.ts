@@ -6,8 +6,10 @@ import { promisify } from "node:util";
 
 import { TraceError } from "../domain/errors.js";
 import type {
+  CreateGitBranchInput,
   CreateGitCheckpointInput,
   CreateGitWorktreeInput,
+  FindGitBranchForResumeInput,
   LocatedGitCheckpoint,
   FindGitWorktreeForResumeInput,
   GitCommitSummary,
@@ -260,6 +262,35 @@ export class GitCli implements GitAdapter {
         }
       );
     }
+  }
+
+  public async createBranchAndCheckout(input: CreateGitBranchInput): Promise<WorktreeEnvironment> {
+    try {
+      await this.run(input.repositoryPath, ["check-ref-format", "--branch", input.branchName]);
+      await this.run(input.repositoryPath, ["switch", "--create", input.branchName, input.targetCommit]);
+      return { branch: input.branchName, worktreePath: input.repositoryPath };
+    } catch (error) {
+      throw new TraceError(
+        "BRANCH_CREATE_FAILED",
+        "Git could not create and checkout the requested branch in the current worktree.",
+        true,
+        {
+          branchName: input.branchName,
+          cause: error instanceof Error ? error.message : String(error),
+          repositoryPath: input.repositoryPath,
+          targetCommit: input.targetCommit
+        }
+      );
+    }
+  }
+
+  public async findBranchCheckoutForResume(
+    input: FindGitBranchForResumeInput
+  ): Promise<WorktreeEnvironment | null> {
+    const inspection = await this.inspectRepository(input.repositoryPath);
+    return inspection.branch === input.branchName
+      ? { branch: input.branchName, worktreePath: inspection.repositoryPath }
+      : null;
   }
 
   public async findWorktreeForResume(

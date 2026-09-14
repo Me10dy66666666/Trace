@@ -335,8 +335,10 @@ Output：
 ```text
 REPO_LOCKED
 UNSAFE_GIT_STATE
+DIRTY_WORKTREE
 SECRET_DETECTED
 CHECKPOINT_FAILED
+BRANCH_CREATE_FAILED
 VERIFY_FAILED
 ```
 
@@ -347,7 +349,7 @@ VERIFY_FAILED
 语义：
 
 ```text
-安全地从历史 Trace Node 创建新的开发环境
+安全地从历史 Trace Node 创建新分支，并将目标历史版本 checkout 到当前项目工作区
 ```
 
 不是：
@@ -361,23 +363,19 @@ Input：
 ```json
 {
   "nodeId": "node_18",
-  "strategy": "worktree",
-  "checkpointCurrent": true
+  "strategy": "branch",
+  "checkpointCurrent": false
 }
 ```
 
 strategy：
 
 ```text
-worktree
-branch
+branch    # 默认：当前工作区必须 clean，在当前目录创建并 checkout 新分支
+worktree  # 显式选择：创建独立 worktree；脏工作区可按 checkpointCurrent 保存
 ```
 
-MVP 默认：
-
-```text
-worktree
-```
+branch 策略在发现 dirty workspace 时必须立即返回 DIRTY_WORKTREE，不得自动 checkpoint、切换分支或覆盖当前修改。用户保存当前工作后可重新执行。
 
 执行流程：
 
@@ -386,11 +384,12 @@ Acquire Lock
 ↓
 Inspect current repository
 ↓
-Checkpoint if dirty
+If branch and dirty: return DIRTY_WORKTREE without mutation
 ↓
 Validate target
 ↓
-Create branch/worktree
+Create branch and checkout current worktree
+  or create separate worktree when strategy=worktree
 ↓
 Verify target HEAD
 ↓
@@ -399,18 +398,31 @@ Create new Trace Session
 Return environment
 ```
 
-Output：
+Output（branch 策略）：
 
 ```json
 {
   "operationId": "op_103",
   "sourceNode": "node_18",
-  "checkpointNode": "node_55",
+  "checkpointNode": null,
   "newBranch": "trace/node-18-20260911",
-  "worktreePath": "/project/.trace/worktrees/node-18",
-  "sessionId": "session_77"
+  "worktreePath": "/project",
+  "sessionId": "session_77",
+  "strategy": "branch",
+  "hostHandoff": {
+    "status": "user_action_required",
+    "branchCheckout": "current_worktree",
+    "requiresHostAction": false,
+    "instructions": [
+      "The new branch is already checked out in the current project worktree.",
+      "Create a new development conversation in the current project worktree.",
+      "Do not run git switch again or create another worktree."
+    ]
+  }
 }
 ```
+
+hostHandoff 是兼容性的结果元数据，不代表 TraceAndBack 会创建 Agent Host 对话。默认 branch 策略完成 Git checkout 后，用户可以手动在当前项目工作区创建新对话；MCP App 不会伪称已经打开新对话。只有显式使用 strategy=worktree 时，返回的独立 worktree 才需要宿主接管或由用户直接打开。
 
 ## 13. trace.attach_conversation
 

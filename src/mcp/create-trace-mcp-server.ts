@@ -11,7 +11,12 @@ type JsonObject = Readonly<Record<string, unknown>>;
 
 export const TRACE_GRAPH_UI_URI = "ui://traceandback/trace-graph-v2.html";
 const TRACE_GRAPH_UI_MIME = "text/html;profile=mcp-app";
-const TRACE_GRAPH_UI_FILE = new URL("./trace-graph-app.html", import.meta.url);
+const TRACE_GRAPH_LAUNCHER_FILE = new URL("./trace-graph-launcher.html", import.meta.url);
+const TRACE_GRAPH_BROWSER_URL_PLACEHOLDER = "__TRACEANDBACK_BROWSER_URL__";
+
+export type TraceMcpServerOptions = Readonly<{
+  browserUrl: string;
+}>;
 
 function success(value: JsonObject) {
   return {
@@ -77,7 +82,7 @@ function buildChangeSummary(
   return `${detail.summary}；涉及 ${detail.changedFiles.length} 个文件（+${stats.additions}/-${stats.deletions} 行）：${paths}${suffix}。`;
 }
 
-async function buildTraceGraph(
+export async function buildTraceGraph(
   trace: TraceService,
   input: Readonly<{
     repositoryId?: string;
@@ -175,7 +180,7 @@ async function buildTraceGraph(
   };
 }
 
-export function createTraceMcpServer(trace: TraceService): McpServer {
+export function createTraceMcpServer(trace: TraceService, options: TraceMcpServerOptions): McpServer {
   const server = new McpServer({ name: "traceandback", version: "0.1.0" });
 
   server.registerResource(
@@ -191,7 +196,10 @@ export function createTraceMcpServer(trace: TraceService): McpServer {
         {
           uri: uri.href,
           mimeType: TRACE_GRAPH_UI_MIME,
-          text: await readFile(TRACE_GRAPH_UI_FILE, "utf8"),
+          text: (await readFile(TRACE_GRAPH_LAUNCHER_FILE, "utf8")).replace(
+            TRACE_GRAPH_BROWSER_URL_PLACEHOLDER,
+            options.browserUrl
+          ),
           _meta: { ui: { prefersBorder: true } }
         }
       ]
@@ -302,19 +310,20 @@ export function createTraceMcpServer(trace: TraceService): McpServer {
     "trace.resume_from",
     {
       title: "Continue from Trace Node",
-      description: "Create a separate verified worktree from a historical Trace Node without rewriting the current branch.",
+      description: "Create a new trace branch and check the historical Trace Node out in the current project worktree. The current worktree must be clean; the existing branch is preserved. Use strategy=worktree explicitly when a separate verified worktree is required.",
       inputSchema: z.object({
         nodeId: z.string().min(1),
-        strategy: z.literal("worktree").default("worktree"),
+        strategy: z.enum(["branch", "worktree"]).default("branch"),
         checkpointCurrent: z.boolean().default(true),
         operationId: z.string().min(1).optional()
       }),
       annotations: { destructiveHint: false }
     },
-    async ({ nodeId, checkpointCurrent, operationId: requestedOperationId }) => execute(() => trace.resumeFrom({
+    async ({ nodeId, strategy, checkpointCurrent, operationId: requestedOperationId }) => execute(() => trace.resumeFrom({
       operationId: operationId(requestedOperationId),
       nodeId,
-      checkpointCurrent
+      checkpointCurrent,
+      strategy
     }))
   );
 

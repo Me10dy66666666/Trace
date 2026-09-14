@@ -23,8 +23,8 @@
   --green-soft: rgba(111, 231, 174, .1);
   --amber: #f7c873;
   --danger: #ff8e9d;
-  --node-width: 304px;
-  --node-height: 414px;
+  --node-width: 236px;
+  --node-height: 88px;
   --shadow: 0 20px 50px rgba(0, 0, 0, .28);
 }
 
@@ -96,36 +96,18 @@ code, .mono { font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation M
 }
 .toolbar-button:hover { border-color: rgba(104, 217, 239, .55); background: #223044; }
 
-.summary-strip {
-  display: grid;
-  grid-template-columns: minmax(130px, 1fr) minmax(160px, 1.25fr) minmax(160px, 1fr) minmax(170px, 1.35fr);
-  gap: 9px;
-  padding: 14px 18px;
-}
-.stat {
-  min-width: 0;
-  padding: 10px 12px;
-  border: 1px solid var(--line-soft);
-  border-radius: 10px;
-  background: rgba(17, 23, 34, .86);
-}
-.stat strong, .stat span { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.stat strong { font-size: 15px; }
-.stat span { margin-top: 2px; color: var(--muted); font-size: 10px; }
-.stat.dirty strong { color: var(--amber); }
 .workspace {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 354px;
   gap: 14px;
   padding: 0 18px 18px;
 }
-.graph-panel, .detail-panel, .empty {
+.detail-panel, .empty {
   border: 1px solid var(--line);
   border-radius: 14px;
   background: rgba(17, 23, 34, .93);
   box-shadow: var(--shadow);
 }
-.graph-panel { min-width: 0; overflow: hidden; }
 .graph-toolbar {
   display: flex;
   align-items: center;
@@ -155,12 +137,18 @@ code, .mono { font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation M
 .legend span { display: inline-flex; align-items: center; gap: 5px; }
 .legend i { display: inline-block; width: 17px; border-top: 2px solid var(--cyan); }
 .legend i.chronology { border-top-color: var(--violet); border-top-style: dashed; }
+.relation-switcher { display: inline-flex; align-items: center; gap: 3px; margin-left: 9px; padding: 3px; border: 1px solid var(--line-soft); border-radius: 9px; background: rgba(255, 255, 255, .025); }
+.relation-toggle { padding: 4px 7px; border-radius: 6px; color: var(--muted); background: transparent; cursor: pointer; font-size: 10px; white-space: nowrap; }
+.relation-toggle:hover { color: var(--text); background: var(--panel-soft); }
+.relation-toggle.active { color: #071014; background: var(--violet); font-weight: 800; }
 
 .canvas-viewport {
   position: relative;
-  min-height: 560px;
+  min-height: 0;
   max-height: calc(100vh - 205px);
   overflow: auto;
+  cursor: grab;
+  touch-action: none;
   background-color: #0c1119;
   background-image:
     linear-gradient(rgba(148, 163, 184, .055) 1px, transparent 1px),
@@ -168,6 +156,7 @@ code, .mono { font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation M
     radial-gradient(circle at 50% 25%, rgba(104, 217, 239, .06), transparent 34%);
   background-size: 32px 32px, 32px 32px, auto;
 }
+.canvas-viewport.is-dragging { cursor: grabbing; user-select: none; }
 .canvas-viewport::after {
   position: absolute;
   inset: 0;
@@ -175,7 +164,7 @@ code, .mono { font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation M
   background: linear-gradient(180deg, rgba(12, 17, 25, 0) 70%, rgba(12, 17, 25, .55));
   content: "";
 }
-.canvas-world { position: relative; min-width: 980px; min-height: 560px; }
+.canvas-world { position: relative; flex: 0 0 auto; overflow: visible; transform-origin: top left; }
 .graph-edges { position: absolute; inset: 0; overflow: visible; pointer-events: none; }
 .edge { fill: none; stroke-width: 2; vector-effect: non-scaling-stroke; }
 .edge.git { stroke: rgba(104, 217, 239, .72); marker-end: url(#arrow-git); }
@@ -185,8 +174,9 @@ code, .mono { font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation M
   display: flex;
   flex-direction: column;
   width: var(--node-width);
+  height: var(--node-height);
   min-height: var(--node-height);
-  padding: 13px;
+  padding: 6px 8px;
   border: 1px solid #34465a;
   border-radius: 12px;
   background: linear-gradient(150deg, #192535, #121a26 72%);
@@ -196,7 +186,7 @@ code, .mono { font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation M
 }
 .node-card::before {
   position: absolute;
-  top: 17px;
+  top: 10px;
   left: -5px;
   width: 8px;
   height: 8px;
@@ -211,29 +201,22 @@ code, .mono { font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation M
   box-shadow: 0 20px 42px rgba(0, 0, 0, .36), 0 0 0 1px rgba(104, 217, 239, .16);
 }
 .node-card.selected { background: linear-gradient(150deg, #1b303a, #121e28 72%); }
-.node-card-head { display: flex; align-items: center; gap: 8px; min-width: 0; }
-.node-kicker { display: flex; align-items: center; gap: 6px; min-width: 0; color: var(--cyan); font-size: 9px; font-weight: 800; letter-spacing: .09em; text-transform: uppercase; }
-.node-kicker span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.node-card-head { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.node-card-label { color: var(--cyan); font-size: 8px; font-weight: 800; letter-spacing: .09em; text-transform: uppercase; }
 .node-icon { display: grid; flex: 0 0 auto; place-items: center; width: 20px; height: 20px; border-radius: 6px; color: var(--cyan); background: var(--cyan-soft); font-size: 11px; }
-.node-menu { display: grid; flex: 0 0 auto; place-items: center; width: 23px; height: 23px; margin-left: auto; border-radius: 6px; color: var(--dim); background: transparent; cursor: pointer; }
-.node-menu:hover { color: var(--text); background: var(--panel-soft); }
-.node-card h2 { margin: 9px 0 0; overflow: hidden; font-size: 14px; line-height: 1.3; text-overflow: ellipsis; white-space: nowrap; }
-.node-time { margin-top: 2px; color: var(--muted); font-size: 10px; }
-.commit-block { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; margin-top: 11px; }
-.commit-cell { min-width: 0; padding: 7px 8px; border: 1px solid var(--line-soft); border-radius: 8px; background: rgba(255, 255, 255, .025); }
+.node-card .node-icon { width: 16px; height: 16px; border-radius: 5px; font-size: 9px; }
+.node-time { margin-top: 3px; color: var(--muted); font-size: 9px; line-height: 1.15; }
+.node-time span { margin-right: 4px; color: var(--dim); }
 .field-label { display: block; margin-bottom: 3px; color: var(--dim); font-size: 9px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
-.commit-cell code { display: block; overflow: hidden; color: var(--cyan); font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
-.card-field { min-width: 0; margin-top: 9px; }
-.card-field p { display: -webkit-box; overflow: hidden; margin: 0; color: var(--muted); font-size: 10px; line-height: 1.38; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
-.card-field p.one-line { -webkit-line-clamp: 1; }
-.card-field p.warning { color: var(--amber); }
-.card-field p.empty-value { color: var(--dim); }
-.card-field .decision { display: -webkit-box; overflow: hidden; color: var(--muted); font-size: 10px; line-height: 1.35; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
-.card-metrics { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; margin-top: 9px; }
-.metric { min-width: 0; padding-top: 7px; border-top: 1px solid var(--line-soft); }
-.metric strong { display: block; overflow: hidden; color: var(--text); font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
-.metric span { display: block; margin-top: 2px; color: var(--dim); font-size: 9px; }
-.node-card-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: auto; padding-top: 11px; }
+.node-card .field-label { margin-bottom: 2px; font-size: 8px; }
+.node-update { display: block; flex: 1 1 auto; min-width: 0; min-height: 0; margin-top: 3px; overflow: auto; scrollbar-color: rgba(148, 163, 184, .38) transparent; scrollbar-width: thin; }
+.node-update::-webkit-scrollbar { width: 5px; }
+.node-update::-webkit-scrollbar-thumb { border-radius: 5px; background: rgba(148, 163, 184, .38); }
+.node-update strong { display: block; overflow-wrap: anywhere; color: var(--text); font-size: 10px; line-height: 1.2; }
+.node-update p { margin: 1px 0 0; overflow-wrap: anywhere; color: var(--muted); font-size: 9px; line-height: 1.2; }
+.node-commit { display: flex; flex: 0 0 auto; align-items: center; gap: 6px; min-width: 0; margin-top: 3px; padding-top: 3px; border-top: 1px solid var(--line-soft); }
+.node-commit .field-label { flex: 0 0 auto; margin: 0; }
+.node-commit code { min-width: 0; overflow: hidden; color: var(--cyan); font-size: 9px; text-overflow: ellipsis; white-space: nowrap; }
 .card-action {
   min-width: 0;
   min-height: 28px;
@@ -290,10 +273,12 @@ code, .mono { font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation M
 .resume-result { margin-top: 14px; padding: 11px; border: 1px solid rgba(111, 231, 174, .3); border-radius: 9px; background: var(--green-soft); }
 .resume-result strong { display: block; color: var(--green); font-size: 11px; }
 .resume-result p { margin: 4px 0 0; color: var(--muted); font-size: 10px; }
+.resume-result .handoff-note { margin-top: 8px; padding: 8px; border: 1px solid rgba(247, 200, 115, .24); border-radius: 8px; color: var(--amber); background: rgba(247, 200, 115, .06); }
 .resume-grid { display: grid; gap: 6px; margin-top: 8px; }
 .resume-grid div { display: grid; grid-template-columns: 66px minmax(0, 1fr); gap: 8px; font-size: 10px; }
 .resume-grid span { color: var(--dim); }
 .resume-grid code { overflow-wrap: anywhere; color: var(--text); }
+.resume-actions { display: grid; grid-template-columns: 1fr; gap: 7px; margin-top: 9px; }
 .detail-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; padding: 12px 16px 16px; border-top: 1px solid var(--line-soft); }
 .detail-actions button { min-height: 31px; padding: 7px 8px; border: 1px solid var(--line); border-radius: 8px; color: var(--muted); background: var(--panel-soft); cursor: pointer; font-size: 10px; }
 .detail-actions button:hover { border-color: rgba(104, 217, 239, .55); color: var(--text); }
@@ -309,25 +294,117 @@ code, .mono { font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation M
 
 @media (max-width: 1050px) {
   .workspace { grid-template-columns: minmax(0, 1fr) 320px; }
-  .summary-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .legend { display: none; }
+  .relation-switcher { margin-left: 0; }
 }
 @media (max-width: 780px) {
   .topbar { padding-inline: 13px; }
   .connection { display: none; }
-  .summary-strip { grid-template-columns: 1fr 1fr; padding-inline: 13px; }
   .workspace { display: block; padding-inline: 13px; }
-  .graph-panel { min-height: 560px; }
   .canvas-viewport { max-height: none; }
   .detail-panel { position: fixed; inset: 12px; z-index: 10; max-height: calc(100vh - 24px); }
   .detail-scroll { max-height: calc(100vh - 184px); }
 }
 @media (max-width: 520px) {
-  .summary-strip { grid-template-columns: 1fr; }
   .heading span { max-width: 170px; }
-  .graph-toolbar { align-items: flex-start; }
+  .graph-toolbar { align-items: flex-start; flex-wrap: wrap; }
   .graph-tools { flex-wrap: wrap; justify-content: flex-end; }
-  .node-card { --node-width: 286px; }
+  .relation-switcher { margin-left: auto; }
+  .node-card { --node-width: 236px; }
+}
+/* Full-browser canvas mode: the graph is the page surface, not a card inside it. */
+html,
+body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.shell {
+  height: 100vh;
+  min-height: 100vh;
+  overflow: hidden;
+}
+
+.workspace {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: calc(100vh - 62px);
+  min-height: calc(100vh - 62px);
+  padding: 0;
+}
+
+.graph-toolbar {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  right: 14px;
+  z-index: 4;
+  min-height: 44px;
+  padding: 8px 10px;
+  border: 1px solid var(--line-soft);
+  border-radius: 10px;
+  background: rgba(8, 11, 17, 0.78);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(12px);
+  pointer-events: none;
+}
+
+.graph-toolbar > * {
+  pointer-events: auto;
+}
+
+.canvas-viewport {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  max-height: none;
+  overflow: auto;
+}
+
+.detail-panel {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  z-index: 5;
+  width: 354px;
+  max-height: calc(100vh - 90px);
+}
+
+.detail-scroll {
+  max-height: calc(100vh - 220px);
+}
+
+.empty {
+  display: grid;
+  place-items: center;
+  min-height: calc(100vh - 62px);
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+@media (max-width: 780px) {
+  .workspace {
+    height: calc(100vh - 62px);
+    min-height: calc(100vh - 62px);
+    padding: 0;
+  }
+
+  .detail-panel {
+    position: fixed;
+    inset: 12px;
+    width: auto;
+    max-height: calc(100vh - 24px);
+  }
+
+  .detail-scroll {
+    max-height: calc(100vh - 184px);
+  }
 }
 </style>
 </head>
@@ -335,19 +412,23 @@ code, .mono { font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation M
 <div id="app"></div>
 <div id="toast" class="toast" role="status" aria-live="polite"></div>
 <script>
-const NODE_WIDTH = 304;
-const NODE_HEIGHT = 414;
-const HORIZONTAL_GAP = 104;
-const VERTICAL_GAP = 78;
+const NODE_WIDTH = 236;
+const NODE_HEIGHT = 88;
+const HORIZONTAL_GAP = 96;
+const VERTICAL_GAP = 56;
+const CANVAS_PADDING = 32;
+const MIN_ZOOM = .55;
+const MAX_ZOOM = 1.8;
 const state = {
   payload: null,
   selectedId: null,
   connected: false,
-  pending: new Map(),
-  nextId: 1,
   zoom: 1,
+  relationshipMode: "implementation",
+  viewportScroll: { left: 0, top: 0 },
+  suppressCardClickUntil: 0,
   positions: new Map(),
-  bounds: { width: 980, height: 560 },
+  bounds: { width: CANVAS_PADDING * 2 + NODE_WIDTH, height: CANVAS_PADDING * 2 + NODE_HEIGHT },
   detailOpen: false,
   detailTab: "overview",
   details: new Map(),
@@ -412,84 +493,83 @@ function notify(message) {
   notify.timer = setTimeout(() => toast.classList.remove("show"), 3200);
 }
 
-function bridgeValue(result) {
+const browserConfig = (() => {
+  const params = new URLSearchParams(window.location?.search ?? "");
+  const token = params.get("token");
+  const repository = params.get("repository");
+  return token && repository ? { token, repository } : null;
+})();
+
+function resultValue(result) {
   return result?.structuredContent ?? result?.result?.structuredContent ?? result;
 }
 
 function errorFromResult(result) {
-  const value = bridgeValue(result);
+  const value = resultValue(result);
   if (result?.isError || (value?.code && value?.message && !value?.graph && !value?.newBranch)) {
     return new Error(value.message || "Trace 操作失败。");
   }
   return null;
 }
 
-function requestHost(method, params) {
-  if (window.parent === window) return Promise.reject(new Error("MCP Apps host bridge unavailable"));
-  const id = state.nextId++;
-  window.parent.postMessage({ jsonrpc: "2.0", id, method, params }, "*");
-  return new Promise((resolve, reject) => {
-    const timer = setTimeout(() => {
-      if (state.pending.delete(id)) reject(new Error("宿主请求超时。"));
-    }, 8000);
-    state.pending.set(id, {
-      resolve: (value) => {
-        clearTimeout(timer);
-        resolve(value);
-      },
-      reject: (error) => {
-        clearTimeout(timer);
-        reject(error);
-      }
-    });
+function renderGraphArguments() {
+  if (!browserConfig) throw new Error("Trace Graph 浏览器地址缺少本地服务参数。");
+  return { repository: browserConfig.repository, limit: 50, cursor: null };
+}
+
+async function callTool(name, args) {
+  if (!browserConfig) throw new Error("Trace Graph 浏览器地址缺少本地服务参数。");
+  const url = new URL("/api/tool", window.location.href);
+  url.searchParams.set("token", browserConfig.token);
+  const response = await fetch(url, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ name, arguments: args })
   });
+  const result = await response.json();
+  if (!response.ok) throw new Error(result?.error || "浏览器数据服务请求失败。");
+  return result;
 }
 
-function callTool(name, args) {
-  const api = window.openai;
-  if (api && typeof api.callTool === "function") return api.callTool(name, args);
-  return requestHost("tools/call", { name, arguments: args });
-}
-
-function sendHostMessage(prompt) {
-  const api = window.openai;
-  if (api && typeof api.sendFollowUpMessage === "function") return api.sendFollowUpMessage({ prompt });
-  if (window.parent !== window) {
-    return requestHost("ui/message", { role: "user", content: [{ type: "text", text: prompt }] });
-  }
-  return Promise.reject(new Error("当前宿主没有提供新对话消息接口。"));
-}
-
-function continuationPrompt(node, result) {
+function resumePrompt(node, result) {
   const data = graph();
   return [
-    "TraceAndBack 已完成 Continue From，请在新环境中开始后续开发。",
+    "[TRACEANDBACK_CONTINUE_REQUEST]",
+    "TraceAndBack 已将当前项目工作区切换到历史版本对应的新分支。",
+    "请在当前项目工作区手动创建新的开发对话；不需要再次执行 git switch，也不需要创建额外 worktree。",
     "项目：" + (data?.name ?? "当前项目"),
     "源 Trace Card：" + (node?.title ?? "历史版本") + "（" + (node?.commit ?? "—") + "）",
     "新分支：" + result.newBranch,
-    "新工作区：" + result.worktreePath,
+    "当前项目工作区：" + result.worktreePath,
     "Trace Session：" + result.sessionId,
-    "请打开一个新的开发对话，并将该对话的工作区设置为上面的 worktree/分支。保留原项目工作区与原分支，不执行 reset 或覆盖。"
+    "继续策略：" + (result.strategy ?? "branch"),
+    "原分支仍保留在原提交，不执行 reset 或覆盖。",
+    "[/TRACEANDBACK_CONTINUE_REQUEST]"
   ].join("\n");
 }
 
-async function handoffResume() {
+async function copyResumePrompt() {
   const node = selected();
   const result = state.lastResume;
   if (!node || !result) {
     notify("请先从一个 Trace Card 继续。");
     return;
   }
+  const clipboard = globalThis.navigator?.clipboard;
+  if (!clipboard?.writeText) {
+    notify("当前浏览器不支持复制，请直接使用下方项目工作区路径。");
+    return;
+  }
   try {
-    await sendHostMessage(continuationPrompt(node, result));
-    notify("已把新分支和工作区交给宿主，可继续打开新的开发对话。");
-  } catch (error) {
-    notify(error?.message ?? "无法通知宿主打开新对话，请使用下方工作区路径。");
+    await clipboard.writeText(resumePrompt(node, result));
+    notify("新对话启动信息已复制。");
+  } catch {
+    notify("复制失败，请直接使用下方项目工作区路径。");
   }
 }
 
-function applyHostGraph(result) {
-  const payload = bridgeValue(result);
+function applyGraphResult(result) {
+  const payload = resultValue(result);
   if (!payload?.graph || !Array.isArray(payload.graph.nodes)) return false;
   const previousSelection = state.selectedId;
   state.payload = payload;
@@ -506,41 +586,67 @@ function applyHostGraph(result) {
 function layoutGraph(data) {
   const nodes = [...(data?.nodes ?? [])];
   const nodeIds = new Set(nodes.map((node) => node.id));
+  const nodesById = new Map(nodes.map((node) => [node.id, node]));
   const ordered = nodes.sort((left, right) => {
     const time = new Date(left.createdAt).getTime() - new Date(right.createdAt).getTime();
-    return Number.isNaN(time) ? 0 : time;
+    if (!Number.isNaN(time) && time !== 0) return time;
+    return String(left.id).localeCompare(String(right.id));
   });
   const childrenByGitParent = new Map();
+  const roots = [];
   for (const node of ordered) {
     const parent = parentId(node);
-    if (!parent || !nodeIds.has(parent)) continue;
+    if (!parent || !nodeIds.has(parent)) {
+      roots.push(node.id);
+      continue;
+    }
     const children = childrenByGitParent.get(parent) ?? [];
     children.push(node.id);
     childrenByGitParent.set(parent, children);
   }
-  const laneByNode = new Map();
-  const nextLane = { value: 0 };
-  for (const node of ordered) {
+
+  const depthByNode = new Map();
+  function depthFor(id, visiting = new Set()) {
+    if (depthByNode.has(id)) return depthByNode.get(id);
+    if (visiting.has(id)) return 0;
+    const node = nodesById.get(id);
     const parent = parentId(node);
-    const parentLane = parent ? laneByNode.get(parent) : undefined;
-    const siblings = parent ? childrenByGitParent.get(parent) ?? [] : [];
-    const siblingIndex = siblings.indexOf(node.id);
-    const lane = parentLane !== undefined && siblingIndex <= 0 ? parentLane : nextLane.value++;
-    laneByNode.set(node.id, lane);
-    nextLane.value = Math.max(nextLane.value, lane + 1);
+    const depth = parent && nodeIds.has(parent)
+      ? depthFor(parent, new Set(visiting).add(id)) + 1
+      : 0;
+    depthByNode.set(id, depth);
+    return depth;
   }
+  for (const node of ordered) depthFor(node.id);
+
+  const laneByNode = new Map();
+  const assigned = new Set();
+  const nextLane = { value: 0 };
+  function assignLane(id, lane) {
+    if (assigned.has(id)) return;
+    assigned.add(id);
+    laneByNode.set(id, lane);
+    const children = childrenByGitParent.get(id) ?? [];
+    children.forEach((child, index) => assignLane(child, index === 0 ? lane : ++nextLane.value));
+  }
+  roots.forEach((id, index) => assignLane(id, index === 0 ? 0 : ++nextLane.value));
+  for (const node of ordered) {
+    if (!assigned.has(node.id)) assignLane(node.id, ++nextLane.value);
+  }
+
   const positions = new Map();
-  ordered.forEach((node, index) => {
+  ordered.forEach((node) => {
+    const depth = depthByNode.get(node.id) ?? 0;
     const lane = laneByNode.get(node.id) ?? 0;
     positions.set(node.id, {
-      left: 56 + index * (NODE_WIDTH + HORIZONTAL_GAP),
-      top: 72 + lane * (NODE_HEIGHT + VERTICAL_GAP)
+      left: CANVAS_PADDING + depth * (NODE_WIDTH + HORIZONTAL_GAP),
+      top: CANVAS_PADDING + lane * (NODE_HEIGHT + VERTICAL_GAP)
     });
   });
   state.bounds = [...positions.values()].reduce((current, position) => ({
-    width: Math.max(current.width, position.left + NODE_WIDTH + 84),
-    height: Math.max(current.height, position.top + NODE_HEIGHT + 84)
-  }), { width: 980, height: 560 });
+    width: Math.max(current.width, position.left + NODE_WIDTH + CANVAS_PADDING),
+    height: Math.max(current.height, position.top + NODE_HEIGHT + CANVAS_PADDING)
+  }), { width: CANVAS_PADDING * 2 + NODE_WIDTH, height: CANVAS_PADDING * 2 + NODE_HEIGHT });
   return positions;
 }
 
@@ -563,16 +669,16 @@ function graphEdges(data) {
     const path = edgePath(from, to, kind);
     return path ? '<path class="edge ' + kind + '" d="' + path + '"><title>' + (kind === "git" ? "Git ancestry" : "Chronology") + '</title></path>' : "";
   }).join("");
-  return '<svg class="graph-edges" width="' + state.bounds.width + '" height="' + state.bounds.height + '" viewBox="0 0 ' + state.bounds.width + ' ' + state.bounds.height + '" aria-hidden="true"><defs><marker id="arrow-git" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#68d9ef"></path></marker><marker id="arrow-chronology" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#a394ff"></path></marker></defs>' + paths(data.gitEdges, "git") + paths(data.chronologyEdges, "chronology") + "</svg>";
+  const kind = state.relationshipMode === "time" ? "chronology" : "git";
+  const pairs = kind === "git" ? data.gitEdges : data.chronologyEdges;
+  return '<svg class="graph-edges" width="' + state.bounds.width + '" height="' + state.bounds.height + '" viewBox="0 0 ' + state.bounds.width + ' ' + state.bounds.height + '" aria-hidden="true"><defs><marker id="arrow-git" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#68d9ef"></path></marker><marker id="arrow-chronology" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#a394ff"></path></marker></defs>' + paths(pairs, kind) + "</svg>";
 }
 
 function card(node, index) {
-  const position = state.positions.get(node.id) ?? { left: 56 + index * (NODE_WIDTH + HORIZONTAL_GAP), top: 72 };
+  const position = state.positions.get(node.id) ?? { left: CANVAS_PADDING + index * (NODE_WIDTH + HORIZONTAL_GAP), top: CANVAS_PADDING };
   const active = node.id === state.selectedId ? " selected" : "";
-  const files = changedFiles(node);
-  const warning = warningText(node);
-  const resumeLoading = state.runningAction === "resume:" + node.id;
-  return '<article class="node-card' + active + '" data-node="' + esc(node.id) + '" style="left:' + position.left + 'px;top:' + position.top + 'px" aria-label="' + esc(node.title) + ' Trace Card"><div class="node-card-head"><div class="node-kicker"><span class="node-icon">◆</span><span>Trace Card · ' + esc(node.round || "Git version") + '</span></div><button class="node-menu" data-action="details" data-node="' + esc(node.id) + '" aria-label="查看版本详情">•••</button></div><h2>' + esc(node.title) + '</h2><div class="node-time">' + esc(formatDate(node.createdAt)) + '</div><div class="commit-block"><div class="commit-cell"><span class="field-label">Commit SHA</span><code title="' + esc(node.commit) + '">' + esc(shortSha(node.commit)) + '</code></div><div class="commit-cell"><span class="field-label">Git Parent</span><code title="' + esc(node.parent) + '">' + esc(shortSha(node.parent)) + '</code></div></div><div class="card-field"><span class="field-label">本次目标</span><p>' + esc(node.goal || node.changes || "未记录目标") + '</p></div><div class="card-field"><span class="field-label">AI Discussion Summary</span><p>' + esc(conversationSummary(node)) + '</p></div><div class="card-field"><span class="field-label">Key Decisions</span><p class="decision">' + esc(decisionText(node)) + '</p></div><div class="card-field"><span class="field-label">Changed Files</span><p class="one-line" title="' + esc(fileNames(node)) + '">' + esc(files.length ? fileNames(node) : "没有检测到文件差异") + '</p></div><div class="card-metrics"><div class="metric"><strong>' + esc(stats(node)) + '</strong><span>Diff Stats</span></div><div class="metric"><strong>' + files.length + '</strong><span>Changed Files</span></div></div><div class="card-field"><span class="field-label">Warnings</span><p class="one-line ' + (warning === "无" ? "empty-value" : "warning") + '">' + esc(warning) + '</p></div><div class="node-card-actions"><button class="card-action" data-action="details" data-node="' + esc(node.id) + '">查看详情</button><button class="card-action" data-action="compare" data-node="' + esc(node.id) + '">比较当前</button><button class="card-action primary" data-action="resume" data-node="' + esc(node.id) + '" ' + (resumeLoading ? "disabled" : "") + '>' + (resumeLoading ? "正在创建工作区…" : "从这里继续") + '</button></div></article>';
+  const update = node.changes || node.goal || node.title || "未记录更新说明";
+  return '<article class="node-card' + active + '" data-node="' + esc(node.id) + '" style="left:' + position.left + 'px;top:' + position.top + 'px" aria-label="' + esc(node.title) + ' Trace Card"><div class="node-card-head"><span class="node-icon">◆</span><span class="node-card-label">更新说明</span></div><div class="node-time"><span>提交时间</span>' + esc(formatDate(node.createdAt)) + '</div><div class="node-update"><strong title="' + esc(node.title) + '">' + esc(node.title || "未命名版本") + '</strong><p title="' + esc(update) + '">' + esc(update) + '</p></div><div class="node-commit"><span class="field-label">仓库提交编号</span><code title="' + esc(node.commit) + '">' + esc(shortSha(node.commit)) + '</code></div></article>';
 }
 
 function relationButton(id, label) {
@@ -622,40 +728,105 @@ function detailPanel(node) {
   const resume = state.lastResume?.sourceNode === node.id ? state.lastResume : null;
   const runningResume = state.runningAction === "resume:" + node.id;
   const resumeMarkup = resume
-    ? '<section class="resume-result"><strong>新 Trace Session 已启动</strong><p>原工作区保持不变，后续开发位于独立 worktree。</p><div class="resume-grid"><div><span>新分支</span><code>' + esc(resume.newBranch) + '</code></div><div><span>工作区</span><code>' + esc(resume.worktreePath) + '</code></div><div><span>Session</span><code>' + esc(resume.sessionId) + '</code></div></div><button class="card-action primary" data-action="handoff" style="width:100%;margin-top:9px">打开新对话并设置工作区</button></section>'
+    ? '<section class="resume-result"><strong>当前工作区已切换</strong><p>当前项目目录已经 checkout 到新分支和目标历史版本；不会创建额外 worktree。现在可以在当前项目中手动创建新的开发对话。</p><div class="handoff-note">不需要再次执行 git switch。若要把本次回退信息带入新对话，请复制启动信息。</div><div class="resume-grid"><div><span>新分支</span><code>' + esc(resume.newBranch) + '</code></div><div><span>项目工作区</span><code>' + esc(resume.worktreePath) + '</code></div><div><span>Session</span><code>' + esc(resume.sessionId) + '</code></div></div><div class="resume-actions"><button class="card-action primary" data-action="copy-resume-prompt" style="width:100%">复制新对话启动信息</button></div></section>'
     : "";
   const relationMarkup = '<section class="detail-section"><h3>当前项目关系</h3><div class="relation-list"><div class="relation"><span>Git Parent</span>' + relationButton(node.gitParent || node.parentNodeId, baseNode(node.gitParent || node.parentNodeId)?.title) + '</div><div class="relation"><span>Derived Nodes</span><span>' + (derived.length ? derived.length + " 个后续节点" : "—") + '</span></div></div></section>';
-  return '<aside class="detail-panel" aria-label="Trace Card 详情"><header class="detail-header"><div class="node-icon">◆</div><div class="detail-heading"><div class="eyebrow">Selected Trace Card</div><h2>' + esc(node.title) + '</h2><p>' + esc(formatDate(node.createdAt)) + ' · ' + esc(node.commit) + '</p></div><button class="close-detail" data-action="close-detail" aria-label="关闭详情">×</button></header><nav class="detail-tabs" aria-label="版本详情"><button class="detail-tab ' + (state.detailTab === "overview" ? "active" : "") + '" data-tab="overview">概览</button><button class="detail-tab ' + (state.detailTab === "diff" ? "active" : "") + '" data-tab="diff">Code Diff</button><button class="detail-tab ' + (state.detailTab === "conversation" ? "active" : "") + '" data-tab="conversation">Conversation</button><button class="detail-tab ' + (state.detailTab === "relations" ? "active" : "") + '" data-tab="relations">关系</button></nav><div class="detail-scroll"><div class="detail-commit-pair"><div><span class="field-label">当前提交</span><code title="' + esc(node.commit) + '">' + esc(node.commit) + '</code></div><span>vs.</span><div><span class="field-label">上一历史版本</span><code title="' + esc(node.parent) + '">' + esc(node.parent) + '</code></div></div>' + detailBody(node) + resumeMarkup + relationMarkup + '</div><div class="detail-actions"><button data-action="details" data-node="' + esc(node.id) + '">同步完整详情</button><button data-action="compare" data-node="' + esc(node.id) + '">比较当前</button><button class="primary" data-action="resume" data-node="' + esc(node.id) + '" ' + (runningResume ? "disabled" : "") + '>' + (runningResume ? "正在创建安全工作区…" : "从此版本继续") + '</button></div></aside>';
+  return '<aside class="detail-panel" aria-label="Trace Card 详情"><header class="detail-header"><div class="node-icon">◆</div><div class="detail-heading"><div class="eyebrow">Selected Trace Card</div><h2>' + esc(node.title) + '</h2><p>' + esc(formatDate(node.createdAt)) + ' · ' + esc(node.commit) + '</p></div><button class="close-detail" data-action="close-detail" aria-label="关闭详情">×</button></header><nav class="detail-tabs" aria-label="版本详情"><button class="detail-tab ' + (state.detailTab === "overview" ? "active" : "") + '" data-tab="overview">概览</button><button class="detail-tab ' + (state.detailTab === "diff" ? "active" : "") + '" data-tab="diff">Code Diff</button><button class="detail-tab ' + (state.detailTab === "conversation" ? "active" : "") + '" data-tab="conversation">Conversation</button><button class="detail-tab ' + (state.detailTab === "relations" ? "active" : "") + '" data-tab="relations">关系</button></nav><div class="detail-scroll"><div class="detail-commit-pair"><div><span class="field-label">当前提交</span><code title="' + esc(node.commit) + '">' + esc(node.commit) + '</code></div><span>vs.</span><div><span class="field-label">上一历史版本</span><code title="' + esc(node.parent) + '">' + esc(node.parent) + '</code></div></div>' + detailBody(node) + resumeMarkup + relationMarkup + '</div><div class="detail-actions"><button data-action="details" data-node="' + esc(node.id) + '">同步完整详情</button><button data-action="compare" data-node="' + esc(node.id) + '">比较当前</button><button class="primary" data-action="resume" data-node="' + esc(node.id) + '" ' + (runningResume ? "disabled" : "") + '>' + (runningResume ? "正在切换当前工作区…" : "从此版本继续") + '</button></div></aside>';
+}
+
+function centerCanvasWorld() {
+  const viewport = document.querySelector(".canvas-viewport");
+  const world = viewport?.querySelector?.(".canvas-world");
+  if (!viewport || !world) return;
+  const scaledWidth = state.bounds.width * state.zoom;
+  const scaledHeight = state.bounds.height * state.zoom;
+  world.style.marginLeft = Math.max(32, (viewport.clientWidth - scaledWidth) / 2) + "px";
+  world.style.marginTop = Math.max(32, (viewport.clientHeight - scaledHeight) / 2) + "px";
 }
 
 function render() {
   const root = document.getElementById("app");
+  const previousViewport = root.querySelector(".canvas-viewport");
+  if (previousViewport) {
+    state.viewportScroll = { left: previousViewport.scrollLeft, top: previousViewport.scrollTop };
+  }
   const data = graph();
   if (!data) {
-    root.innerHTML = "<main class=\"empty\"><div class=\"eyebrow\">TraceAndBack MCP App</div><h1>" + (state.connected ? "正在读取当前项目的 Git 历史…" : "请通过 TraceAndBack 打开此组件") + "</h1><p>" + (state.connected ? "工具结果到达后会自动渲染项目 Trace Card。" : "独立打开不会显示任何演示或伪造数据。") + "</p></main>";
+    const heading = browserConfig ? "正在读取当前项目的 Git 历史…" : "浏览器地址无效";
+    const description = browserConfig
+      ? "正在连接本机 Trace 数据服务。"
+      : "请从 TraceAndBack 工具重新打开项目图谱。";
+    root.innerHTML = "<main class=\"empty\"><div class=\"eyebrow\">TraceAndBack Browser</div><h1>" + heading + "</h1><p>" + description + "</p></main>";
     return;
   }
   const nodes = graphNodes();
   const current = selected();
-  const repoStatus = state.payload?.status ?? {};
-  const dirty = data.status === "working tree dirty";
-  const worldStyle = "width:" + state.bounds.width + "px;height:" + state.bounds.height + "px;transform:scale(" + state.zoom + ");transform-origin:top left";
+  const relationshipLabel = state.relationshipMode === "time" ? "时间关系" : "实现关系";
+  const worldStyle = "width:" + state.bounds.width + "px;height:" + state.bounds.height + "px;zoom:" + state.zoom;
   const emptyOrGraph = nodes.length === 0
     ? "<main class=\"empty\"><div class=\"eyebrow\">Repository connected</div><h1>当前项目还没有 Trace Card</h1><p>创建第一个 Git 提交后点击刷新，版本卡会出现在项目图中。</p></main>"
-    : "<main class=\"workspace\"><section class=\"graph-panel\"><div class=\"graph-toolbar\"><div class=\"graph-toolbar-copy\"><h1>项目版本画布</h1><p>每张卡片代表一个可恢复 Git 版本 · 点击卡片查看完整介绍</p></div><div class=\"graph-tools\"><button class=\"graph-tool\" data-action=\"zoom-out\" aria-label=\"缩小\">−</button><span class=\"zoom-label\">" + Math.round(state.zoom * 100) + "%</span><button class=\"graph-tool\" data-action=\"zoom-in\" aria-label=\"放大\">＋</button><button class=\"graph-tool\" data-action=\"zoom-reset\" aria-label=\"重置缩放\">⌂</button></div><div class=\"legend\"><span><i></i>Git ancestry</span><span><i class=\"chronology\"></i>Chronology</span></div></div><div class=\"canvas-viewport\"><div class=\"canvas-world\" style=\"" + worldStyle + "\">" + graphEdges(data) + nodes.map(card).join("") + "</div></div></section>" + detailPanel(current) + "</main>";
-  root.innerHTML = "<div class=\"shell\"><header class=\"topbar\"><div class=\"brand-mark\">↗</div><div class=\"heading\"><strong>" + esc(data.name) + " · Project Trace Graph</strong><span>" + esc(data.branch) + " · " + esc(data.status) + "</span></div><div class=\"topbar-spacer\"></div><div class=\"connection\">" + (state.connected ? "MCP 实时数据" : "等待宿主") + "</div><button class=\"toolbar-button\" data-action=\"refresh\">刷新</button></header><section class=\"summary-strip\"><div class=\"stat\"><strong>" + nodes.length + "</strong><span>Trace Cards · 当前项目版本</span></div><div class=\"stat\"><strong title=\"" + esc(data.branch) + "\">" + esc(data.branch) + "</strong><span>当前分支</span></div><div class=\"stat " + (dirty ? "dirty" : "") + "\"><strong>" + esc(data.status) + "</strong><span>工作区状态" + (dirty && repoStatus.untrackedCount ? " · 未跟踪 " + esc(repoStatus.untrackedCount) : "") + "</span></div><div class=\"stat\"><strong>" + esc(data.name) + "</strong><span>项目作用域 · 不混入其他仓库</span></div></section>" + emptyOrGraph + "</div>";
+    : "<main class=\"workspace\"><div class=\"graph-toolbar\"><div class=\"graph-toolbar-copy\"><h1>项目版本画布</h1><p>卡片位置按上一版本的实现关系排列 · 点击卡片查看完整详情</p></div><div class=\"graph-tools\"><button class=\"graph-tool\" data-action=\"zoom-out\" aria-label=\"缩小\">−</button><span class=\"zoom-label\">" + Math.round(state.zoom * 100) + "%</span><button class=\"graph-tool\" data-action=\"zoom-in\" aria-label=\"放大\">＋</button><button class=\"graph-tool\" data-action=\"zoom-reset\" aria-label=\"重置缩放\">⌂</button></div><div class=\"relation-switcher\" role=\"group\" aria-label=\"关系视图\"><button class=\"relation-toggle " + (state.relationshipMode === "implementation" ? "active" : "") + "\" data-action=\"set-relation\" data-relation=\"implementation\" aria-pressed=\"" + (state.relationshipMode === "implementation" ? "true" : "false") + "\">实现关系</button><button class=\"relation-toggle " + (state.relationshipMode === "time" ? "active" : "") + "\" data-action=\"set-relation\" data-relation=\"time\" aria-pressed=\"" + (state.relationshipMode === "time" ? "true" : "false") + "\">时间关系</button></div><div class=\"legend\"><span><i class=\"" + (state.relationshipMode === "time" ? "chronology" : "") + "\"></i>" + relationshipLabel + "</span></div></div><div class=\"canvas-viewport\" aria-label=\"项目版本画布，可拖动和缩放\"><div class=\"canvas-world\" style=\"" + worldStyle + "\">" + graphEdges(data) + nodes.map(card).join("") + "</div></div>" + detailPanel(current) + "</main>";
+  root.innerHTML = "<div class=\"shell\"><header class=\"topbar\"><div class=\"brand-mark\">↗</div><div class=\"heading\"><strong>" + esc(data.name) + " · Project Trace Graph</strong><span>" + esc(data.branch) + " · " + esc(data.status) + "</span></div><div class=\"topbar-spacer\"></div><div class=\"connection\">" + (state.connected ? "本地数据服务" : "连接中") + "</div><button class=\"toolbar-button\" data-action=\"refresh\">刷新</button></header>" + emptyOrGraph + "</div>";
+  const viewport = root.querySelector(".canvas-viewport");
+  if (viewport) {
+    centerCanvasWorld();
+    viewport.scrollLeft = state.viewportScroll.left;
+    viewport.scrollTop = state.viewportScroll.top;
+  }
+  bindCanvasGestures();
 }
 
-async function act(action, nodeId) {
+function clampZoom(value) {
+  return Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, value));
+}
+
+function zoomAtPointer(nextZoom, clientX, clientY) {
+  const viewport = document.querySelector(".canvas-viewport");
+  const zoom = clampZoom(nextZoom);
+  if (!viewport) {
+    state.zoom = zoom;
+    render();
+    return;
+  }
+  const rect = viewport.getBoundingClientRect();
+  const pointerX = Math.min(Math.max(clientX - rect.left, 0), rect.width);
+  const pointerY = Math.min(Math.max(clientY - rect.top, 0), rect.height);
+  const world = viewport.querySelector?.(".canvas-world");
+  const marginLeft = Number.parseFloat(world?.style?.marginLeft || "0") || 0;
+  const marginTop = Number.parseFloat(world?.style?.marginTop || "0") || 0;
+  const worldX = (viewport.scrollLeft + pointerX - marginLeft) / state.zoom;
+  const worldY = (viewport.scrollTop + pointerY - marginTop) / state.zoom;
+  state.zoom = zoom;
+  render();
+  const nextViewport = document.querySelector(".canvas-viewport");
+  if (!nextViewport) return;
+  const nextWorld = nextViewport.querySelector?.(".canvas-world");
+  const nextMarginLeft = Number.parseFloat(nextWorld?.style?.marginLeft || "0") || 0;
+  const nextMarginTop = Number.parseFloat(nextWorld?.style?.marginTop || "0") || 0;
+  nextViewport.scrollLeft = Math.max(0, worldX * zoom + nextMarginLeft - pointerX);
+  nextViewport.scrollTop = Math.max(0, worldY * zoom + nextMarginTop - pointerY);
+  state.viewportScroll = { left: nextViewport.scrollLeft, top: nextViewport.scrollTop };
+}
+
+function zoomAtViewportCenter(nextZoom) {
+  const viewport = document.querySelector(".canvas-viewport");
+  if (!viewport) {
+    state.zoom = clampZoom(nextZoom);
+    render();
+    return;
+  }
+  const rect = viewport.getBoundingClientRect();
+  zoomAtPointer(clampZoom(nextZoom), rect.left + rect.width / 2, rect.top + rect.height / 2);
+}
+
+async function act(action, nodeId, relation) {
   const node = nodeId ? baseNode(nodeId) : selected();
   try {
     if (action === "refresh") {
-      const repository = state.payload?.repository?.path;
-      const args = repository ? { repository, limit: 50, cursor: null } : { repositoryId: state.payload?.repository?.id, limit: 50, cursor: null };
-      const result = await callTool("trace.render_graph", args);
+      const result = await callTool("trace.render_graph", renderGraphArguments());
       const error = errorFromResult(result);
       if (error) throw error;
-      if (!applyHostGraph(result)) throw new Error("Trace Graph 返回了无效数据。");
+      if (!applyGraphResult(result)) throw new Error("Trace Graph 返回了无效数据。");
       notify("项目 Trace Graph 已刷新。");
       return;
     }
@@ -664,23 +835,25 @@ async function act(action, nodeId) {
       render();
       return;
     }
-    if (action === "zoom-in") {
-      state.zoom = Math.min(1.8, state.zoom + .1);
+    if (action === "set-relation") {
+      state.relationshipMode = relation === "time" ? "time" : "implementation";
       render();
+      return;
+    }
+    if (action === "zoom-in") {
+      zoomAtViewportCenter(state.zoom + .1);
       return;
     }
     if (action === "zoom-out") {
-      state.zoom = Math.max(.65, state.zoom - .1);
-      render();
+      zoomAtViewportCenter(state.zoom - .1);
       return;
     }
     if (action === "zoom-reset") {
-      state.zoom = 1;
-      render();
+      zoomAtViewportCenter(1);
       return;
     }
-    if (action === "handoff") {
-      await handoffResume();
+    if (action === "copy-resume-prompt") {
+      await copyResumePrompt();
       return;
     }
     if (!node) return;
@@ -692,7 +865,7 @@ async function act(action, nodeId) {
       const result = await callTool("trace.get_node", { nodeId: node.id });
       const error = errorFromResult(result);
       if (error) throw error;
-      const value = bridgeValue(result);
+      const value = resultValue(result);
       if (value && value.id) state.details.set(node.id, value);
       state.runningAction = null;
       state.detailTab = "overview";
@@ -713,7 +886,7 @@ async function act(action, nodeId) {
       const result = await callTool("trace.compare", { fromNode, toNode: node.id });
       const error = errorFromResult(result);
       if (error) throw error;
-      state.comparison = { nodeId: node.id, value: bridgeValue(result) };
+      state.comparison = { nodeId: node.id, value: resultValue(result) };
       state.runningAction = null;
       render();
       notify("Code Diff 已加载。");
@@ -722,27 +895,48 @@ async function act(action, nodeId) {
     if (action === "resume") {
       state.runningAction = "resume:" + node.id;
       render();
-      const result = await callTool("trace.resume_from", { nodeId: node.id, strategy: "worktree", checkpointCurrent: true });
+      const result = await callTool("trace.resume_from", { nodeId: node.id, strategy: "branch", checkpointCurrent: false });
       const error = errorFromResult(result);
       if (error) throw error;
-      const value = bridgeValue(result);
+      const value = resultValue(result);
       if (!value?.newBranch || !value?.worktreePath) throw new Error("恢复操作没有返回可验证的工作区。");
       state.lastResume = value;
       state.runningAction = null;
       state.detailTab = "overview";
-      render();
-      notify("已从 " + shortSha(node.commit) + " 创建安全工作区：" + value.newBranch);
       try {
-        await sendHostMessage(continuationPrompt(node, value));
-        notify("已自动通知宿主打开新开发对话并设置工作区。");
+        const refreshed = await callTool("trace.render_graph", renderGraphArguments());
+        if (!errorFromResult(refreshed)) applyGraphResult(refreshed);
       } catch {
-        notify("安全工作区已创建；可点击“打开新对话并设置工作区”完成宿主切换。");
+        // The Git operation already succeeded; the user can refresh the browser page.
       }
+      render();
+      notify("已从 " + shortSha(node.commit) + " 将当前工作区切换到新分支：" + value.newBranch + "。现在可手动创建新对话。");
     }
   } catch (error) {
     state.runningAction = null;
     render();
     notify("操作失败：" + (error?.message ?? "未知错误"));
+  }
+}
+
+async function loadInitialGraph() {
+  if (!browserConfig) {
+    render();
+    return;
+  }
+  state.runningAction = "initial-load";
+  render();
+  try {
+    const result = await callTool("trace.render_graph", renderGraphArguments());
+    const error = errorFromResult(result);
+    if (error) throw error;
+    if (!applyGraphResult(result)) throw new Error("Trace Graph 返回了无效数据。");
+  } catch (error) {
+    state.connected = false;
+    notify("加载失败：" + (error?.message ?? "无法连接本地数据服务。"));
+  } finally {
+    state.runningAction = null;
+    render();
   }
 }
 
@@ -754,7 +948,7 @@ function bindApp() {
     if (actionButton) {
       event.preventDefault();
       event.stopPropagation();
-      void act(actionButton.dataset.action, actionButton.dataset.node);
+      void act(actionButton.dataset.action, actionButton.dataset.node, actionButton.dataset.relation);
       return;
     }
     const tab = source?.closest?.("[data-tab]");
@@ -774,6 +968,11 @@ function bindApp() {
     }
     const nodeCard = source?.closest?.(".node-card");
     if (nodeCard) {
+      if (state.suppressCardClickUntil > performance.now()) {
+        state.suppressCardClickUntil = 0;
+        event.preventDefault();
+        return;
+      }
       state.selectedId = nodeCard.dataset.node;
       state.detailOpen = true;
       state.detailTab = "overview";
@@ -781,31 +980,67 @@ function bindApp() {
       render();
     }
   });
+  bindCanvasGestures();
 }
 
-function installBridge() {
-  const api = window.openai;
-  if (api?.toolOutput) applyHostGraph(api.toolOutput);
-  if (window.parent !== window || api) state.connected = true;
-  window.addEventListener("message", (event) => {
-    if (event.source !== window.parent) return;
-    const message = event.data;
-    if (!message || message.jsonrpc !== "2.0") return;
-    if (message.id !== undefined && state.pending.has(message.id)) {
-      const pending = state.pending.get(message.id);
-      state.pending.delete(message.id);
-      message.error ? pending.reject(new Error(message.error.message || "宿主请求失败")) : pending.resolve(message.result);
-      return;
+function bindCanvasGestures() {
+  const viewport = document.querySelector(".canvas-viewport");
+  if (!viewport) return;
+  let drag = null;
+
+  viewport.addEventListener("pointerdown", (event) => {
+    if (event.button !== 0) return;
+    const target = event.target instanceof Element ? event.target : null;
+    if (target?.closest("button, a, input, textarea, select")) return;
+    drag = {
+      x: event.clientX,
+      y: event.clientY,
+      scrollLeft: viewport.scrollLeft,
+      scrollTop: viewport.scrollTop,
+      card: Boolean(target?.closest(".node-card")),
+      moved: false
+    };
+    viewport.classList.add("is-dragging");
+  });
+
+  viewport.addEventListener("pointermove", (event) => {
+    if (!drag) return;
+    if (Math.hypot(event.clientX - drag.x, event.clientY - drag.y) > 4) {
+      drag.moved = true;
+      if (!drag.captured) {
+        viewport.setPointerCapture(event.pointerId);
+        drag.captured = true;
+      }
     }
-    if (message.method === "ui/notifications/tool-result") {
-      applyHostGraph(message.params?.structuredContent ?? message.params);
-    }
-  }, { passive: true });
+    event.preventDefault();
+    viewport.scrollLeft = drag.scrollLeft - (event.clientX - drag.x);
+    viewport.scrollTop = drag.scrollTop - (event.clientY - drag.y);
+    state.viewportScroll = { left: viewport.scrollLeft, top: viewport.scrollTop };
+  });
+
+  const stopDragging = () => {
+    if (!drag) return;
+    if (drag.card && drag.moved) state.suppressCardClickUntil = performance.now() + 500;
+    drag = null;
+    viewport.classList.remove("is-dragging");
+  };
+  viewport.addEventListener("pointerup", stopDragging);
+  viewport.addEventListener("pointercancel", stopDragging);
+  viewport.addEventListener("lostpointercapture", stopDragging);
+
+  viewport.addEventListener("wheel", (event) => {
+    const target = event.target instanceof Element ? event.target : null;
+    if (target?.closest(".node-update")) return;
+    event.preventDefault();
+    const factor = event.deltaY < 0 ? 1.1 : .9;
+    zoomAtPointer(state.zoom * factor, event.clientX, event.clientY);
+  }, { passive: false });
 }
 
 bindApp();
-installBridge();
+window.addEventListener("resize", centerCanvasWorld);
 render();
+void loadInitialGraph();
 </script>
 </body>
 </html>

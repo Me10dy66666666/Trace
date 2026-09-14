@@ -315,7 +315,7 @@ Commit transaction
 
 ## 10. Resume SOP
 
-默认禁止直接修改当前 branch history。
+默认不修改原 branch ref；在当前 worktree 创建并 checkout 新的 trace/... 分支。当前 workspace dirty 时必须先由用户保存。
 
 执行：
 
@@ -328,13 +328,11 @@ resume_from(node)
 ```text
 Validate node
 ↓
-Checkpoint current workspace
+Reject dirty current workspace
 ↓
 Resolve target commit
 ↓
-Create worktree
-↓
-Create trace branch
+Create trace branch and checkout current worktree
 ↓
 Verify HEAD
 ↓
@@ -343,17 +341,19 @@ Create Trace Session
 Return environment information
 ```
 
-优先：
+默认：
+
+```text
+new branch + current worktree
+```
+
+显式隔离策略：
 
 ```text
 git worktree
 ```
 
-fallback：
-
-```text
-branch
-```
+当前 worktree dirty 时不得自动 checkpoint；必须向用户返回明确的保存提示。strategy=worktree 才允许按 checkpointCurrent 保存 dirty workspace。
 
 禁止自动：
 

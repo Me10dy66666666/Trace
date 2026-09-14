@@ -7,7 +7,12 @@ import { TraceError } from "../domain/errors.js";
 import type { GitAdapter } from "../domain/git-adapter.js";
 import type { TraceHistoryPage } from "../domain/history.js";
 import type { TraceNodeDetail } from "../domain/node-detail.js";
-import type { ContinueResult, TraceSession } from "../domain/resume.js";
+import {
+  createContinueHandoff,
+  type ContinueResult,
+  type ResumeStrategy,
+  type TraceSession
+} from "../domain/resume.js";
 import type { TraceStore } from "../domain/trace-store.js";
 import type { RegisteredRepository, RepositoryInspection, RepositoryStatus } from "../domain/types.js";
 import { FilesystemSecretScanner } from "../infrastructure/filesystem-secret-scanner.js";
@@ -253,13 +258,19 @@ export class TraceService {
   }
 
   public async resumeFrom(
-    input: Readonly<{ operationId: string; nodeId: string; checkpointCurrent: boolean }>
+    input: Readonly<{
+      operationId: string;
+      nodeId: string;
+      checkpointCurrent: boolean;
+      strategy?: ResumeStrategy;
+    }>
   ): Promise<ContinueResult> {
     const previous = this.dependencies.store.getOperation(input.operationId);
     if (previous !== null) {
       return this.resolveRepeatedResume(previous);
     }
 
+    const strategy = input.strategy ?? "branch";
     const target = this.requireNode(input.nodeId);
     const repository = this.requireRepository(target.repositoryId);
     const lock = await this.dependencies.locks.acquire(repository);
@@ -273,6 +284,19 @@ export class TraceService {
 
       const inspection = await this.inspectRegisteredRepository(repository);
       this.assertSafeMutationState(inspection);
+      if (strategy === "branch" && inspection.dirty) {
+        throw new TraceError(
+          "DIRTY_WORKTREE",
+          "当前工作区存在未提交修改，请先提交或保存这些修改后再从历史版本继续。",
+          true,
+          {
+            action: "commit_or_stash",
+            branch: inspection.branch,
+            repositoryPath: repository.repositoryPath,
+            untrackedCount: inspection.untrackedCount
+          }
+        );
+      }
       const branchName = this.createResumeBranchName(target.id, input.operationId);
       const worktreeName = this.createWorktreeName(target.id, input.operationId);
       await this.dependencies.git.verifyCommit(repository.repositoryPath, target.commit);
@@ -285,7 +309,8 @@ export class TraceService {
           sourceNodeId: target.id,
           targetCommit: target.commit,
           branchName,
-          worktreeName
+          worktreeName,
+          strategy
         },
         result: null,
         recovery: null,
@@ -296,16 +321,22 @@ export class TraceService {
       operationCreated = true;
       this.dependencies.store.markOperationPrepared(input.operationId);
 
-      const checkpointNode = input.checkpointCurrent && inspection.dirty
+      const checkpointNode = strategy === "worktree" && input.checkpointCurrent && inspection.dirty
         ? await this.createCheckpointForResume(repository, input.operationId, target.id, inspection.head)
         : null;
 
-      const environment = await this.dependencies.git.createWorktree({
-        repositoryPath: repository.repositoryPath,
-        targetCommit: target.commit,
-        branchName,
-        worktreeName
-      });
+      const environment = strategy === "branch"
+        ? await this.dependencies.git.createBranchAndCheckout({
+            repositoryPath: repository.repositoryPath,
+            targetCommit: target.commit,
+            branchName
+          })
+        : await this.dependencies.git.createWorktree({
+            repositoryPath: repository.repositoryPath,
+            targetCommit: target.commit,
+            branchName,
+            worktreeName
+          });
       if (checkpointNode === null) {
         this.dependencies.store.markOperationGitApplied(input.operationId);
       }
@@ -329,7 +360,9 @@ export class TraceService {
         checkpointNode: checkpointNode?.id ?? null,
         newBranch: environment.branch,
         worktreePath: environment.worktreePath,
-        sessionId: session.id
+        sessionId: session.id,
+        strategy,
+        hostHandoff: createContinueHandoff(strategy)
       };
       this.dependencies.store.markOperationVerified(input.operationId);
       this.dependencies.store.completeOperation(input.operationId, result);
@@ -474,11 +507,17 @@ export class TraceService {
     }
 
     try {
-      const environment = await this.dependencies.git.findWorktreeForResume({
-        repositoryPath: repository.repositoryPath,
-        branchName: intent.branchName,
-        worktreeName: intent.worktreeName
-      });
+      const strategy = intent.strategy ?? "worktree";
+      const environment = strategy === "branch"
+        ? await this.dependencies.git.findBranchCheckoutForResume({
+            repositoryPath: repository.repositoryPath,
+            branchName: intent.branchName
+          })
+        : await this.dependencies.git.findWorktreeForResume({
+            repositoryPath: repository.repositoryPath,
+            branchName: intent.branchName,
+            worktreeName: intent.worktreeName
+          });
       if (environment === null) {
         return null;
       }
@@ -706,7 +745,12 @@ export class TraceService {
       operation.result !== null &&
       "sourceNode" in operation.result
     ) {
-      return operation.result;
+      return {
+        ...operation.result,
+        strategy: operation.result.strategy ?? operation.intent?.strategy ?? "worktree",
+        hostHandoff: operation.result.hostHandoff
+          ?? createContinueHandoff(operation.result.strategy ?? operation.intent?.strategy ?? "worktree")
+      };
     }
     throw new TraceError(
       "OPERATION_INTERRUPTED",

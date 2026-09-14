@@ -11,6 +11,7 @@ import { StdioServerTransport } from "@modelcontextprotocol/server/stdio";
 
 import { TraceService } from "../src/application/trace-service.js";
 import { createTraceMcpServer } from "../src/mcp/create-trace-mcp-server.js";
+import { createTraceGraphBrowserServer } from "../src/mcp/trace-graph-browser-server.js";
 import { GitCli } from "../src/infrastructure/git-cli.js";
 import { RepositoryLockManager } from "../src/infrastructure/repository-lock-manager.js";
 import { SqliteTraceStore } from "../src/infrastructure/sqlite-trace-store.js";
@@ -108,7 +109,7 @@ test("exposes the eight v1 trace.* Tools over MCP stdio", async () => {
     locks: new RepositoryLockManager(),
     store
   });
-  const server = createTraceMcpServer(service);
+  const server = createTraceMcpServer(service, { browserUrl: "http://127.0.0.1:4173/trace-graph-app.html?token=test" });
   const client = await createClient(server);
 
   try {
@@ -158,7 +159,7 @@ test("exposes the eight v1 trace.* Tools over MCP stdio", async () => {
   }
 });
 
-test("renders embedded Trace cards from the registered repository Git history", async () => {
+test("opens a standalone Trace Graph from the registered repository Git history", async () => {
   const fixtureRoot = await mkdtemp(join(tmpdir(), "traceandback-mcp-graph-"));
   const repositoryPath = join(fixtureRoot, "repository");
   const store = new SqliteTraceStore(join(fixtureRoot, "trace.db"));
@@ -167,7 +168,7 @@ test("renders embedded Trace cards from the registered repository Git history", 
     locks: new RepositoryLockManager(),
     store
   });
-  const server = createTraceMcpServer(service);
+  const server = createTraceMcpServer(service, { browserUrl: "http://127.0.0.1:4173/trace-graph-app.html?token=test" });
   const client = await createClient(server);
 
   try {
@@ -208,14 +209,10 @@ test("renders embedded Trace cards from the registered repository Git history", 
     }>[];
     assert.equal(resources[0]?.mimeType, "text/html;profile=mcp-app");
     const ui = resources[0]?.text ?? "";
-    assert.match(ui, /ui\/notifications\/tool-result/);
-    assert.match(ui, /class="node-card/);
-    assert.match(ui, /class="graph-edges"/);
-    assert.match(ui, /AI Discussion Summary/);
-    assert.match(ui, /Key Decisions/);
-    assert.match(ui, /Changed Files/);
-    assert.match(ui, /sendFollowUpMessage/);
-    assert.doesNotMatch(ui, /class="timeline"/);
+    assert.match(ui, /openExternal/);
+    assert.match(ui, /repository/);
+    assert.doesNotMatch(ui, /__TRACEANDBACK_BROWSER_URL__/);
+    assert.doesNotMatch(ui, /node-card|ui\/notifications\/tool-result|MCP Apps host bridge/);
 
     const rendered = await client.request("tools/call", {
       name: "trace.render_graph",
@@ -230,6 +227,68 @@ test("renders embedded Trace cards from the registered repository Git history", 
     assert.deepEqual(payload.graph.nodes.map((node) => node.title), ["feat: second", "feat: base"]);
   } finally {
     await client.close();
+    store.close();
+    await rm(fixtureRoot, { force: true, recursive: true });
+  }
+});
+
+test("refreshes the top-level Trace Graph through the local browser API", async () => {
+  const fixtureRoot = await mkdtemp(join(tmpdir(), "traceandback-browser-"));
+  const repositoryPath = join(fixtureRoot, "repository");
+  const store = new SqliteTraceStore(join(fixtureRoot, "trace.db"));
+  const service = new TraceService({
+    git: new GitCli(),
+    locks: new RepositoryLockManager(),
+    store
+  });
+  const browser = await createTraceGraphBrowserServer(service, { port: 0, token: "test-token" });
+
+  try {
+    await git(fixtureRoot, "init", "--initial-branch=main", "repository");
+    await git(repositoryPath, "config", "user.name", "Trace Test");
+    await git(repositoryPath, "config", "user.email", "trace@example.test");
+    await writeFile(join(repositoryPath, "README.md"), "base\n", "utf8");
+    await git(repositoryPath, "add", "README.md");
+    await git(repositoryPath, "commit", "-m", "feat: base");
+
+    const pageUrl = new URL(browser.url);
+    pageUrl.searchParams.set("repository", repositoryPath);
+    const page = await fetch(pageUrl);
+    assert.equal(page.status, 200);
+    assert.doesNotMatch(await page.text(), /window\\.openai|window\\.parent|postMessage/);
+
+    const call = async () => {
+      const url = new URL("/api/tool", pageUrl);
+      url.searchParams.set("token", "test-token");
+      return await fetch(url, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          name: "trace.render_graph",
+          arguments: { repository: repositoryPath, limit: 50, cursor: null }
+        })
+      });
+    };
+
+    const firstResponse = await call();
+    const firstPayload = await firstResponse.json() as Readonly<{
+      structuredContent: Readonly<{ graph: Readonly<{ nodes: readonly unknown[] }> }>;
+    }>;
+    assert.equal(firstResponse.status, 200);
+    assert.equal(firstPayload.structuredContent.graph.nodes.length, 1);
+
+    await writeFile(join(repositoryPath, "README.md"), "base\nsecond\n", "utf8");
+    await git(repositoryPath, "add", "README.md");
+    await git(repositoryPath, "commit", "-m", "feat: second");
+
+    const refreshedResponse = await call();
+    const refreshedPayload = await refreshedResponse.json() as Readonly<{
+      structuredContent: Readonly<{ graph: Readonly<{ nodes: readonly unknown[] }> }>;
+    }>;
+    assert.equal(refreshedResponse.status, 200);
+    assert.equal(refreshedPayload.structuredContent.graph.nodes.length, 2);
+  } finally {
+    await browser.close();
     store.close();
     await rm(fixtureRoot, { force: true, recursive: true });
   }

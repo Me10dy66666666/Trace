@@ -14,6 +14,12 @@ export type CreateGitWorktreeInput = Readonly<{
   worktreeName: string;
 }>;
 
+export type CreateGitBranchInput = Readonly<{
+  repositoryPath: string;
+  targetCommit: string;
+  branchName: string;
+}>;
+
 export type WorktreeEnvironment = Readonly<{
   branch: string;
   worktreePath: string;
@@ -23,6 +29,11 @@ export type FindGitWorktreeForResumeInput = Readonly<{
   repositoryPath: string;
   branchName: string;
   worktreeName: string;
+}>;
+
+export type FindGitBranchForResumeInput = Readonly<{
+  repositoryPath: string;
+  branchName: string;
 }>;
 
 export type LocatedGitCheckpoint = Readonly<{
@@ -46,7 +57,9 @@ export interface GitAdapter {
   verifyCommit(repositoryPath: string, commit: string): Promise<void>;
   getCommitChangedFiles(repositoryPath: string, commit: string): Promise<readonly ChangedFile[]>;
   compareCommits(repositoryPath: string, fromCommit: string, toCommit: string): Promise<readonly ChangedFile[]>;
+  createBranchAndCheckout(input: CreateGitBranchInput): Promise<WorktreeEnvironment>;
   createWorktree(input: CreateGitWorktreeInput): Promise<WorktreeEnvironment>;
+  findBranchCheckoutForResume(input: FindGitBranchForResumeInput): Promise<WorktreeEnvironment | null>;
   findWorktreeForResume(input: FindGitWorktreeForResumeInput): Promise<WorktreeEnvironment | null>;
   verifyWorktreeHead(worktreePath: string, targetCommit: string): Promise<void>;
 }

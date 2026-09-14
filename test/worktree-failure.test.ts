@@ -59,7 +59,7 @@ test("preserves the current workspace when worktree creation fails", async () =>
     const conflictingBranch = `trace/${targetNodeId}-${operationId}`;
     await git(repositoryPath, "branch", conflictingBranch, targetCommit);
     await assert.rejects(
-      () => service.resumeFrom({ checkpointCurrent: true, nodeId: targetNodeId, operationId }),
+      () => service.resumeFrom({ checkpointCurrent: true, nodeId: targetNodeId, operationId, strategy: "worktree" }),
       (error: unknown) => error instanceof TraceError && error.code === "WORKTREE_CREATE_FAILED"
     );
 

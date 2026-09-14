@@ -11,7 +11,7 @@ Deliver a local TypeScript MCP core that can register one Git repository, record
 ## Scope
 
 - Local SQLite Trace store and durable operation journal.
-- Repository fingerprinting, status inspection, lock management, secret scanning, checkpoint, and worktree-based continuation.
+- Repository fingerprinting, status inspection, lock management, secret scanning, checkpoint, current-worktree branch continuation, and explicit worktree-based continuation.
 - Trace Node, Trace Session, Git/chronology relations, conversation-event attachment, and code-only summary fallback.
 - The seven v1 MCP tools specified in `MCP-SPEC` and contract/integration tests.
 
@@ -25,7 +25,7 @@ Deliver a local TypeScript MCP core that can register one Git repository, record
 
 - A registered repository returns a safe, structured status.
 - Dirty staged, unstaged, and untracked work becomes a recoverable checkpoint unless sensitive content is detected.
-- Continuing from an old node creates a separate worktree and does not rewrite the current branch.
+- Continuing from an old node creates a new trace/... branch in the current worktree by default; dirty work must be saved first, and an explicit worktree strategy remains available.
 - Git and chronological relations remain independently queryable.
 - Mutating operations are locked, journaled, idempotent by operation ID, and expose actionable errors.
 - MCP schemas validate the minimum v1 tool set.

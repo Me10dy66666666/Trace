@@ -80,7 +80,8 @@ test("attaches a local conversation reference to a Trace Session idempotently", 
     const resumed = await service.resumeFrom({
       checkpointCurrent: false,
       nodeId: target.nodeId,
-      operationId: "conversation-resume"
+      operationId: "conversation-resume",
+      strategy: "worktree"
     });
     assert.equal((await service.getNode({ nodeId: target.nodeId })).conversationStatus, "unavailable");
 

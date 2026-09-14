@@ -249,25 +249,17 @@ A → B → C
 
 系统必须首先检查 Working Tree。
 
-如果存在修改：
-
-```text
-自动创建 checkpoint D
-```
-
-形成：
-
-```text
-A → B → C → D   chronology
-```
-
-然后基于 B 创建：
+如果当前工作区 clean，系统基于 B 创建：
 
 ```text
 trace/<timestamp>
 ```
 
-或独立 Git worktree。
+并直接在当前项目工作区 checkout 该新分支；不创建额外 worktree，也不执行 reset。
+
+如果存在修改，系统必须停止并提示用户先提交或保存当前工作。用户完成保存后重新执行“从这里继续”。默认流程不自动 checkpoint，不覆盖用户未保存内容。
+
+用户随后可以自己在当前项目工作区创建新的开发对话；TraceAndBack 不声称已经替用户打开新对话。
 
 最终：
 
@@ -286,14 +278,15 @@ A → B → C
 系统必须：
 
 1. 检测 dirty workspace。
-2. 扫描敏感内容。
-3. 创建 checkpoint。
-4. 保存 Trace Node。
-5. 验证 checkpoint 可恢复。
-6. 创建历史版本 worktree/branch。
-7. 启动新的 Trace Session。
+2. 如果 dirty，提示用户提交或保存并立即停止，不执行 Git 切换。
+3. 验证目标历史版本。
+4. 创建 trace/<timestamp> 分支并在当前 worktree checkout 目标版本。
+5. 验证目标 HEAD。
+6. 创建新的 Trace Session。
 
 任何步骤失败时，不得执行破坏性切换。
+
+当用户显式选择独立 worktree 策略时，系统可以按 checkpointCurrent 创建 checkpoint，再创建并验证独立 worktree；该策略不是默认路径。
 
 ## 7. MVP 功能范围
 
@@ -461,13 +454,13 @@ git push --force
 从历史节点继续默认使用：
 
 ```text
-git worktree
+new branch + current worktree
 ```
 
-其次：
+需要并行隔离时显式使用：
 
 ```text
-new branch
+git worktree
 ```
 
 ## 13. 产品成功指标

@@ -54,7 +54,8 @@ test("continues safely from a detached HEAD by creating a named worktree branch"
     const continued = await service.resumeFrom({
       checkpointCurrent: false,
       nodeId: target.nodeId,
-      operationId: "detached-resume"
+      operationId: "detached-resume",
+      strategy: "worktree"
     });
     assert.match(continued.newBranch, /^trace\//);
     assert.equal((await git(continued.worktreePath, "branch", "--show-current")).trim(), continued.newBranch);
