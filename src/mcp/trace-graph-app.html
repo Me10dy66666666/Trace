@@ -168,9 +168,10 @@ code, .mono { font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation M
 }
 .canvas-world { position: absolute; left: 0; top: 0; overflow: visible; transform-origin: top left; will-change: transform; }
 .graph-edges { position: absolute; inset: 0; overflow: visible; pointer-events: none; }
-.edge { fill: none; stroke-width: 2; vector-effect: non-scaling-stroke; }
-.edge.git { stroke: rgba(212, 135, 97, .68); marker-end: url(#arrow-git); }
-.edge.chronology { stroke: rgba(185, 163, 136, .64); stroke-dasharray: 5 6; marker-end: url(#arrow-chronology); }
+.edge { fill: none; stroke-linecap: round; vector-effect: non-scaling-stroke; }
+.edge.git { stroke: rgba(212, 135, 97, .78); stroke-width: 2.15; marker-start: url(#edge-origin); marker-end: url(#arrow-git); }
+.edge.chronology { stroke: rgba(205, 178, 147, .86); stroke-width: 2.35; stroke-dasharray: 8 6; marker-start: url(#edge-origin); marker-end: url(#arrow-chronology); }
+.graph-edges #edge-origin circle { fill: #8f7964; }
 .graph-edges #arrow-git path { fill: var(--cyan); }
 .graph-edges #arrow-chronology path { fill: var(--violet); }
 .node-card {
@@ -424,6 +425,7 @@ const VERTICAL_GAP = 56;
 const CANVAS_PADDING = 32;
 const MIN_ZOOM = .25;
 const MAX_ZOOM = 2;
+const AUTO_REFRESH_INTERVAL = 3000;
 const state = {
   payload: null,
   selectedId: null,
@@ -431,6 +433,10 @@ const state = {
   zoom: 1,
   pan: { x: 0, y: 0 },
   relationshipMode: "implementation",
+  autoRefreshTimer: null,
+  autoRefreshInFlight: false,
+  repositoryRevision: null,
+  lastAutoRefreshAt: null,
   centerViewportOnNextRender: false,
   suppressCardClickUntil: 0,
   positions: new Map(),
@@ -584,6 +590,7 @@ function applyGraphResult(result) {
     ? previousSelection
     : payload.graph.nodes[0]?.id ?? null;
   state.connected = true;
+  state.repositoryRevision = repositoryRevision(payload.status);
   state.positions = layoutGraph(payload.graph);
   state.comparison = null;
   state.centerViewportOnNextRender = isInitialGraph;
@@ -664,9 +671,9 @@ function edgePath(from, to, kind, routeIndex = 0) {
   if (!source || !target) return null;
   const offset = kind === "git" ? -9 : 9;
   const routeOffset = kind === "chronology" ? ((routeIndex % 5) - 2) * 7 : 0;
-  const startX = source.left + NODE_WIDTH;
+  const startX = source.left + NODE_WIDTH + 9;
   const startY = source.top + NODE_HEIGHT / 2 + offset + routeOffset;
-  const endX = target.left - 9;
+  const endX = target.left - 12;
   const endY = target.top + NODE_HEIGHT / 2 + offset + routeOffset;
   const direction = endX >= startX ? 1 : -1;
   const distance = Math.max(48, Math.abs(endX - startX) * .46);
@@ -676,20 +683,27 @@ function edgePath(from, to, kind, routeIndex = 0) {
 function graphEdges(data) {
   const paths = (pairs, kind) => {
     const seen = new Set();
+    const routesBySource = new Map();
     const routesByTarget = new Map();
     return (Array.isArray(pairs) ? pairs : []).map(([from, to]) => {
       const key = from + "->" + to;
       if (seen.has(key)) return "";
       seen.add(key);
-      const routeIndex = routesByTarget.get(to) ?? 0;
-      routesByTarget.set(to, routeIndex + 1);
+      const sourceRoute = routesBySource.get(from) ?? 0;
+      const targetRoute = routesByTarget.get(to) ?? 0;
+      routesBySource.set(from, sourceRoute + 1);
+      routesByTarget.set(to, targetRoute + 1);
+      const routeIndex = sourceRoute + targetRoute;
       const path = edgePath(from, to, kind, routeIndex);
-    return path ? '<path class="edge ' + kind + '" d="' + path + '"><title>' + (kind === "git" ? "Git ancestry" : "Chronology") + '</title></path>' : "";
+      const sourceTitle = baseNode(from)?.title || from;
+      const targetTitle = baseNode(to)?.title || to;
+      const label = (kind === "git" ? "Git ancestry" : "Chronology") + ": " + sourceTitle + " → " + targetTitle;
+      return path ? '<path class="edge ' + kind + '" data-edge-from="' + esc(from) + '" data-edge-to="' + esc(to) + '" d="' + path + '"><title>' + esc(label) + '</title></path>' : "";
     }).join("");
   };
   const kind = state.relationshipMode === "time" ? "chronology" : "git";
   const pairs = kind === "git" ? data.gitEdges : data.chronologyEdges;
-  return '<svg class="graph-edges" width="' + state.bounds.width + '" height="' + state.bounds.height + '" viewBox="0 0 ' + state.bounds.width + ' ' + state.bounds.height + '" aria-hidden="true"><defs><marker id="arrow-git" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="8" markerHeight="8" markerUnits="userSpaceOnUse" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#d48761"></path></marker><marker id="arrow-chronology" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="8" markerHeight="8" markerUnits="userSpaceOnUse" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#b9a388"></path></marker></defs>' + paths(pairs, kind) + "</svg>";
+  return '<svg class="graph-edges" width="' + state.bounds.width + '" height="' + state.bounds.height + '" viewBox="0 0 ' + state.bounds.width + ' ' + state.bounds.height + '" aria-hidden="true"><defs><marker id="edge-origin" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="7" markerHeight="7" markerUnits="userSpaceOnUse" orient="auto"><circle cx="5" cy="5" r="3"></circle></marker><marker id="arrow-git" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="8" markerHeight="8" markerUnits="userSpaceOnUse" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#d48761"></path></marker><marker id="arrow-chronology" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="8" markerHeight="8" markerUnits="userSpaceOnUse" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#b9a388"></path></marker></defs>' + paths(pairs, kind) + "</svg>";
 }
 
 function card(node, index) {
@@ -758,6 +772,46 @@ function updateCanvasTransform() {
   world.style.transform = "translate(" + state.pan.x + "px, " + state.pan.y + "px) scale(" + state.zoom + ")";
 }
 
+function repositoryRevision(status) {
+  if (!status || typeof status !== "object") return null;
+  return [
+    status.head ?? "—",
+    status.branch ?? "—",
+    status.dirty ? "dirty" : "clean",
+    status.untrackedCount ?? 0,
+    status.operationState ?? "none"
+  ].join("|");
+}
+
+async function refreshGraphAutomatically() {
+  if (!browserConfig || !state.payload || state.autoRefreshInFlight) return;
+  state.autoRefreshInFlight = true;
+  try {
+    const result = await callTool("trace.get_status", { repository: browserConfig.repository });
+    const error = errorFromResult(result);
+    if (error) throw error;
+    const revision = repositoryRevision(resultValue(result));
+    if (!revision || revision === state.repositoryRevision) return;
+    const refreshed = await callTool("trace.render_graph", renderGraphArguments());
+    const refreshError = errorFromResult(refreshed);
+    if (refreshError) throw refreshError;
+    if (!applyGraphResult(refreshed)) throw new Error("自动更新返回了无效的 Trace Graph。");
+    state.lastAutoRefreshAt = Date.now();
+    notify("检测到仓库更新，Trace 图已自动同步。");
+  } catch {
+    // Keep the current graph usable; the manual refresh action remains available.
+  } finally {
+    state.autoRefreshInFlight = false;
+  }
+}
+
+function startAutoRefresh() {
+  if (!browserConfig || state.autoRefreshTimer !== null || typeof window.setInterval !== "function") return;
+  state.autoRefreshTimer = window.setInterval(() => {
+    void refreshGraphAutomatically();
+  }, AUTO_REFRESH_INTERVAL);
+}
+
 function centerCanvasWorld(centerViewport = false) {
   const viewport = document.querySelector(".canvas-viewport");
   const world = viewport?.querySelector?.(".canvas-world");
@@ -791,7 +845,7 @@ function render() {
   const emptyOrGraph = nodes.length === 0
     ? "<main class=\"empty\"><div class=\"eyebrow\">Repository connected</div><h1>当前项目还没有 Trace Card</h1><p>创建第一个 Git 提交后点击刷新，版本卡会出现在项目图中。</p></main>"
     : "<main class=\"workspace\"><div class=\"graph-toolbar\"><div class=\"graph-toolbar-copy\"><h1>项目版本画布</h1><p>卡片位置按上一版本的实现关系排列 · 点击卡片查看完整详情</p></div><div class=\"graph-tools\"><button class=\"graph-tool\" data-action=\"zoom-out\" aria-label=\"缩小\">−</button><span class=\"zoom-label\">" + Math.round(state.zoom * 100) + "%</span><button class=\"graph-tool\" data-action=\"zoom-in\" aria-label=\"放大\">＋</button><button class=\"graph-tool\" data-action=\"zoom-reset\" aria-label=\"重置缩放\">⌂</button></div><div class=\"relation-switcher\" role=\"group\" aria-label=\"关系视图\"><button class=\"relation-toggle " + (state.relationshipMode === "implementation" ? "active" : "") + "\" data-action=\"set-relation\" data-relation=\"implementation\" aria-pressed=\"" + (state.relationshipMode === "implementation" ? "true" : "false") + "\">实现关系</button><button class=\"relation-toggle " + (state.relationshipMode === "time" ? "active" : "") + "\" data-action=\"set-relation\" data-relation=\"time\" aria-pressed=\"" + (state.relationshipMode === "time" ? "true" : "false") + "\">时间关系</button></div><div class=\"legend\"><span><i class=\"" + (state.relationshipMode === "time" ? "chronology" : "") + "\"></i>" + relationshipLabel + "</span></div></div><div class=\"canvas-viewport\" aria-label=\"项目版本画布，可拖动和缩放\"><div class=\"canvas-world\" style=\"" + worldStyle + "\">" + graphEdges(data) + nodes.map(card).join("") + "</div></div>" + detailPanel(current) + "</main>";
-  root.innerHTML = "<div class=\"shell\"><header class=\"topbar\"><div class=\"brand-mark\">↗</div><div class=\"heading\"><strong>" + esc(data.name) + " · Project Trace Graph</strong><span>" + esc(data.branch) + " · " + esc(data.status) + "</span></div><div class=\"topbar-spacer\"></div><div class=\"connection\">" + (state.connected ? "本地数据服务" : "连接中") + "</div><button class=\"toolbar-button\" data-action=\"refresh\">刷新</button></header>" + emptyOrGraph + "</div>";
+  root.innerHTML = "<div class=\"shell\"><header class=\"topbar\"><div class=\"brand-mark\">↗</div><div class=\"heading\"><strong>" + esc(data.name) + " · Project Trace Graph</strong><span>" + esc(data.branch) + " · " + esc(data.status) + "</span></div><div class=\"topbar-spacer\"></div><div class=\"connection\">" + (state.connected ? "本地数据服务 · 自动同步" : "连接中") + "</div><button class=\"toolbar-button\" data-action=\"refresh\">刷新</button></header>" + emptyOrGraph + "</div>";
   const viewport = root.querySelector(".canvas-viewport");
   if (viewport) {
     const centerViewport = state.centerViewportOnNextRender;
@@ -848,6 +902,7 @@ async function act(action, nodeId, relation) {
       const error = errorFromResult(result);
       if (error) throw error;
       if (!applyGraphResult(result)) throw new Error("Trace Graph 返回了无效数据。");
+      startAutoRefresh();
       notify("项目 Trace Graph 已刷新。");
       return;
     }
@@ -952,6 +1007,7 @@ async function loadInitialGraph() {
     const error = errorFromResult(result);
     if (error) throw error;
     if (!applyGraphResult(result)) throw new Error("Trace Graph 返回了无效数据。");
+    startAutoRefresh();
   } catch (error) {
     state.connected = false;
     notify("加载失败：" + (error?.message ?? "无法连接本地数据服务。"));

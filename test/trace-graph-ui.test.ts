@@ -188,3 +188,22 @@ test("opens Trace Card details after a stationary click in the standalone browse
 
   assert.ok(root.detail, "a stationary card click should render the detail panel");
 });
+
+test("renders graph edges with explicit endpoints and visible direction markers", async () => {
+  const { html } = await loadUi();
+
+  assert.match(html, /data-edge-from=/, "each edge should expose its source node");
+  assert.match(html, /data-edge-to=/, "each edge should expose its target node");
+  assert.match(html, /marker-start: url\(#edge-origin\)/, "each edge should show its origin");
+  assert.match(html, /marker-end: url\(#arrow-chronology\)/, "time edges should show their direction");
+  assert.match(html, /routesByTarget/, "parallel edges should be routed into separate lanes");
+});
+
+test("keeps manual refresh and enables repository status polling", async () => {
+  const { html } = await loadUi();
+
+  assert.match(html, /data-action=\\"refresh\\"/, "manual refresh must remain available");
+  assert.match(html, /trace\.get_status/, "the browser should be able to check repository status");
+  assert.match(html, /setInterval/, "the graph should poll for repository changes");
+  assert.match(html, /automatic|自动/, "automatic refresh should be communicated in the UI");
+});

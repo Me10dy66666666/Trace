@@ -361,6 +361,25 @@ test("refreshes the top-level Trace Graph through the local browser API", async 
     assert.equal(firstResponse.status, 200);
     assert.equal(firstPayload.structuredContent.graph.nodes.length, 1);
 
+    const statusCall = async () => {
+      const url = new URL("/api/tool", pageUrl);
+      url.searchParams.set("token", "test-token");
+      return await fetch(url, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          name: "trace.get_status",
+          arguments: { repository: repositoryPath }
+        })
+      });
+    };
+    const firstStatusResponse = await statusCall();
+    const firstStatusPayload = await firstStatusResponse.json() as Readonly<{
+      structuredContent: Readonly<{ head: string | null; branch: string | null }>;
+    }>;
+    assert.equal(firstStatusResponse.status, 200);
+    assert.equal(firstStatusPayload.structuredContent.head, await git(repositoryPath, "rev-parse", "HEAD"));
+
     await writeFile(join(repositoryPath, "README.md"), "base\nsecond\n", "utf8");
     await git(repositoryPath, "add", "README.md");
     await git(repositoryPath, "commit", "-m", "feat: second");
@@ -371,6 +390,13 @@ test("refreshes the top-level Trace Graph through the local browser API", async 
     }>;
     assert.equal(refreshedResponse.status, 200);
     assert.equal(refreshedPayload.structuredContent.graph.nodes.length, 2);
+
+    const secondStatusResponse = await statusCall();
+    const secondStatusPayload = await secondStatusResponse.json() as Readonly<{
+      structuredContent: Readonly<{ head: string | null; branch: string | null }>;
+    }>;
+    assert.equal(secondStatusResponse.status, 200);
+    assert.notEqual(secondStatusPayload.structuredContent.head, firstStatusPayload.structuredContent.head);
   } finally {
     await browser.close();
     store.close();

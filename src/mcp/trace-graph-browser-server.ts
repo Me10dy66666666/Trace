@@ -89,6 +89,15 @@ async function callBrowserTool(
       if (repository === undefined) throw new Error("Browser API requires repository.");
       return await buildTraceGraph(trace, { repository, limit: limit(args), cursor: cursor(args) });
     }
+    case "trace.get_status": {
+      const repository = optionalString(args, "repository");
+      if (repository === undefined) throw new Error("Browser API requires repository.");
+      const registered = await trace.registerRepository({ repositoryPath: repository });
+      return await trace.getStatus({
+        repositoryId: registered.id,
+        repositoryPath: registered.repositoryPath
+      });
+    }
     case "trace.get_node":
       return await trace.getNode({ nodeId: requiredString(args, "nodeId") });
     case "trace.compare":
