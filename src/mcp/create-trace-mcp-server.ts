@@ -23,6 +23,8 @@ export type TraceMcpServerOptions = Readonly<{
   repository?: string;
 }>;
 
+type TraceGraphDetailLevel = "full" | "summary";
+
 function success(value: JsonObject) {
   return {
     content: [{ type: "text" as const, text: JSON.stringify(value) }],
@@ -106,6 +108,8 @@ export async function buildTraceGraph(
     repository?: string;
     limit: number;
     cursor: string | null;
+    detailLevel?: TraceGraphDetailLevel;
+    includePublishedCommit?: boolean;
   }>
 ): Promise<JsonObject> {
   const registered = input.repositoryId === undefined
@@ -131,48 +135,73 @@ export async function buildTraceGraph(
       limit: input.limit,
       repositoryPath: selectedRepositoryPath
     }),
-    trace.getPublishedCommit({
-      repositoryId: selectedRepositoryId,
-      repositoryPath: selectedRepositoryPath
-    })
+    input.includePublishedCommit === false
+      ? Promise.resolve(null)
+      : trace.getPublishedCommit({
+          repositoryId: selectedRepositoryId,
+          repositoryPath: selectedRepositoryPath
+        })
   ]);
   const historyById = new Map(history.nodes.map((node) => [node.id, node]));
-  const nodes = await Promise.all(history.nodes.map(async (historyNode, index) => {
-    const detail = await trace.getNode({ nodeId: historyNode.id });
-    const parentNode = historyNode.gitParent === null
-      ? null
-      : historyById.get(historyNode.gitParent) ?? null;
-    const stats = diffStats(detail.changedFiles);
-    const decisions = detail.decisions
-      .map((decision) => `${decision.title}: ${decision.reason}`)
-      .join("；");
-    return {
-      id: historyNode.id,
-      type: "version",
-      title: historyNode.title,
-      meta: historyNode.createdAt,
-      createdAt: historyNode.createdAt,
-      commit: historyNode.commit,
-      parent: parentNode?.commit ?? "—",
-      parentNodeId: historyNode.gitParent,
-      gitParent: historyNode.gitParent,
-      chronologicalParent: historyNode.chronologicalParent,
-      goal: detail.goal,
-      changes: buildChangeSummary(detail),
-      summary: detail.summary,
-      conversationSummary: workSummaryText(detail.workSummary),
-      workSummary: detail.workSummary ?? null,
-      decisions: decisions || "未记录关键决策。",
-      changedFiles: detail.changedFiles,
-      files: `${detail.changedFiles.length} changed files`,
-      diffStats: `+${stats.additions} / -${stats.deletions} lines`,
-      warnings: detail.conversationStatus === "available"
-        ? "无"
-        : "暂无已关联 AI 对话总结",
-      conversationStatus: detail.conversationStatus,
-      round: `Version ${String(history.nodes.length - index).padStart(2, "0")}`
-    };
-  }));
+  const fullNodes = input.detailLevel === "summary"
+    ? []
+    : await Promise.all(history.nodes.map(async (historyNode, index) => {
+      const detail = await trace.getNode({ nodeId: historyNode.id });
+      const parentNode = historyNode.gitParent === null
+        ? null
+        : historyById.get(historyNode.gitParent) ?? null;
+      const stats = diffStats(detail.changedFiles);
+      const decisions = detail.decisions
+        .map((decision) => `${decision.title}: ${decision.reason}`)
+        .join("；");
+      return {
+        id: historyNode.id,
+        type: "version",
+        title: historyNode.title,
+        meta: historyNode.createdAt,
+        createdAt: historyNode.createdAt,
+        commit: historyNode.commit,
+        parent: parentNode?.commit ?? "—",
+        parentNodeId: historyNode.gitParent,
+        gitParent: historyNode.gitParent,
+        chronologicalParent: historyNode.chronologicalParent,
+        goal: detail.goal,
+        changes: buildChangeSummary(detail),
+        summary: detail.summary,
+        conversationSummary: workSummaryText(detail.workSummary),
+        workSummary: detail.workSummary ?? null,
+        decisions: decisions || "未记录关键决策。",
+        changedFiles: detail.changedFiles,
+        files: `${detail.changedFiles.length} changed files`,
+        diffStats: `+${stats.additions} / -${stats.deletions} lines`,
+        warnings: detail.conversationStatus === "available"
+          ? "无"
+          : "暂无已关联 AI 对话总结",
+        conversationStatus: detail.conversationStatus,
+        round: `Version ${String(history.nodes.length - index).padStart(2, "0")}`
+      };
+    }));
+  const nodes = input.detailLevel === "summary"
+    ? history.nodes.map((historyNode, index) => {
+        const parentNode = historyNode.gitParent === null
+          ? null
+          : historyById.get(historyNode.gitParent) ?? null;
+        return {
+          id: historyNode.id,
+          type: "version",
+          title: historyNode.title,
+          meta: historyNode.createdAt,
+          createdAt: historyNode.createdAt,
+          commit: historyNode.commit,
+          parent: parentNode?.commit ?? "—",
+          parentNodeId: historyNode.gitParent,
+          gitParent: historyNode.gitParent,
+          chronologicalParent: historyNode.chronologicalParent,
+          changes: "详情按需加载。",
+          round: `Version ${String(history.nodes.length - index).padStart(2, "0")}`
+        };
+    })
+    : fullNodes;
 
   const gitEdges = history.nodes.flatMap((node) => (
     node.gitParent !== null && historyById.has(node.gitParent)
@@ -324,7 +353,9 @@ export function createTraceMcpServer(trace: TraceService, options: TraceMcpServe
       await buildTraceGraph(trace, {
         repository: options.repository ?? process.cwd(),
         limit: 50,
-        cursor: null
+        cursor: null,
+        detailLevel: "summary",
+        includePublishedCommit: false
       }),
       options.browserUrl
     ))
