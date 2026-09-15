@@ -93,10 +93,17 @@ async function callBrowserTool(
       const repository = optionalString(args, "repository");
       if (repository === undefined) throw new Error("Browser API requires repository.");
       const registered = await trace.registerRepository({ repositoryPath: repository });
-      return await trace.getStatus({
-        repositoryId: registered.id,
-        repositoryPath: registered.repositoryPath
-      });
+      const [status, publishedCommit] = await Promise.all([
+        trace.getStatus({
+          repositoryId: registered.id,
+          repositoryPath: registered.repositoryPath
+        }),
+        trace.getPublishedCommit({
+          repositoryId: registered.id,
+          repositoryPath: registered.repositoryPath
+        })
+      ]);
+      return { ...status, publishedCommit };
     }
     case "trace.get_node":
       return await trace.getNode({ nodeId: requiredString(args, "nodeId") });

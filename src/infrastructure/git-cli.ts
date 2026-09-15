@@ -109,6 +109,66 @@ export class GitCli implements GitAdapter {
       });
   }
 
+  public async getPublishedCommit(repositoryPath: string): Promise<string | null> {
+    const branch = await this.optionalRun(repositoryPath, ["symbolic-ref", "--quiet", "--short", "HEAD"]);
+    const upstream = branch?.trim()
+      ? await this.optionalRun(repositoryPath, ["rev-parse", "--abbrev-ref", `${branch.trim()}@{upstream}`])
+      : null;
+
+    if (upstream?.trim()) {
+      const upstreamRef = upstream.trim();
+      const separator = upstreamRef.indexOf("/");
+      const remote = separator > 0 ? upstreamRef.slice(0, separator) : null;
+      const remoteBranch = remote ? upstreamRef.slice(separator + 1) : null;
+      if (remote && remoteBranch) {
+        const remoteRef = `refs/heads/${remoteBranch}`;
+        const result = await this.optionalRun(repositoryPath, ["ls-remote", remote, remoteRef]);
+        const commit = (result ?? "")
+          .split(/\r?\n/)
+          .map((line) => line.trim().split(/\s+/))
+          .find(([objectId, ref]) => ref === remoteRef && /^[0-9a-f]{40,64}$/i.test(objectId ?? ""))?.[0];
+        if (commit !== undefined) return commit;
+
+        const localUpstream = await this.optionalRun(repositoryPath, ["rev-parse", "--verify", upstreamRef]);
+        if (localUpstream?.trim()) return localUpstream.trim();
+      }
+    }
+
+    const remoteOutput = await this.optionalRun(repositoryPath, ["remote"]);
+    const remotes = (remoteOutput ?? "")
+      .split(/\r?\n/)
+      .map((remote) => remote.trim())
+      .filter((remote) => remote !== "")
+      .sort((left, right) => (left === "origin" ? -1 : right === "origin" ? 1 : 0));
+    for (const remote of remotes) {
+      const result = await this.optionalRun(repositoryPath, ["ls-remote", "--symref", remote, "HEAD"]);
+      const commit = (result ?? "")
+        .split(/\r?\n/)
+        .map((line) => line.trim().split(/\s+/))
+        .find(([objectId, ref]) => ref === "HEAD" && /^[0-9a-f]{40,64}$/i.test(objectId ?? ""))?.[0];
+      if (commit !== undefined) return commit;
+    }
+
+    const localHeadRef = await this.optionalRun(repositoryPath, [
+      "symbolic-ref",
+      "--quiet",
+      "refs/remotes/origin/HEAD"
+    ]);
+    if (localHeadRef?.trim()) {
+      const localHead = await this.optionalRun(repositoryPath, ["rev-parse", "--verify", localHeadRef.trim()]);
+      if (localHead?.trim()) return localHead.trim();
+    }
+
+    if (branch?.trim()) {
+      if (upstream?.trim() && upstream.trim() !== "HEAD") {
+        const upstreamCommit = await this.optionalRun(repositoryPath, ["rev-parse", "--verify", upstream.trim()]);
+        if (upstreamCommit?.trim()) return upstreamCommit.trim();
+      }
+    }
+
+    return null;
+  }
+
   public async createCheckpoint(input: CreateGitCheckpointInput): Promise<string> {
     const message = [
       `trace: checkpoint ${input.reason}`,
