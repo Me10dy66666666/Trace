@@ -7,39 +7,39 @@
 <style>
 :root {
   color-scheme: dark;
-  --bg: #080b11;
-  --panel: #111722;
-  --panel-raised: #171f2d;
-  --panel-soft: #1c2635;
-  --line: #2b394b;
-  --line-soft: rgba(148, 163, 184, .16);
-  --text: #eef4f8;
-  --muted: #94a3b8;
-  --dim: #64748b;
-  --cyan: #68d9ef;
-  --cyan-soft: rgba(104, 217, 239, .12);
-  --violet: #a394ff;
-  --green: #6fe7ae;
-  --green-soft: rgba(111, 231, 174, .1);
-  --amber: #f7c873;
-  --danger: #ff8e9d;
+  --bg: #151311;
+  --panel: #1d1a17;
+  --panel-raised: #25201c;
+  --panel-soft: #2d2722;
+  --line: #453a31;
+  --line-soft: rgba(205, 184, 164, .14);
+  --text: #f4eee7;
+  --muted: #b7aaa0;
+  --dim: #8a7b70;
+  --cyan: #d48761;
+  --cyan-soft: rgba(212, 135, 97, .11);
+  --green: #9cc7a2;
+  --green-soft: rgba(156, 199, 162, .09);
+  --amber: #dcb16a;
+  --danger: #dc918b;
   --node-width: 236px;
   --node-height: 88px;
-  --shadow: 0 20px 50px rgba(0, 0, 0, .28);
+  --shadow: 0 16px 36px rgba(0, 0, 0, .3);
 }
 
 * { box-sizing: border-box; }
 html, body { min-height: 100%; margin: 0; background: var(--bg); color: var(--text); }
-body { font: 13px/1.5 Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif; }
+body { font: 13px/1.5 Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif; letter-spacing: .005em; }
 button { border: 0; font: inherit; }
 button:focus-visible { outline: 2px solid var(--cyan); outline-offset: 2px; }
 code, .mono { font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace; }
+::selection { color: var(--text); background: rgba(212, 135, 97, .22); }
 
 .shell {
   min-height: 100vh;
   background:
-    radial-gradient(circle at 76% -10%, rgba(104, 217, 239, .11), transparent 30%),
-    radial-gradient(circle at 20% 110%, rgba(163, 148, 255, .08), transparent 36%),
+    radial-gradient(circle at 78% -12%, rgba(212, 135, 97, .045), transparent 28%),
+    radial-gradient(circle at 14% 112%, rgba(188, 163, 132, .025), transparent 34%),
     var(--bg);
 }
 
@@ -50,7 +50,7 @@ code, .mono { font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation M
   min-height: 62px;
   padding: 12px 18px;
   border-bottom: 1px solid var(--line-soft);
-  background: rgba(8, 11, 17, .9);
+  background: rgba(21, 19, 17, .88);
   backdrop-filter: blur(16px);
 }
 .brand-mark {
@@ -60,10 +60,11 @@ code, .mono { font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation M
   width: 32px;
   height: 32px;
   border-radius: 10px;
-  color: #061014;
-  background: linear-gradient(135deg, var(--cyan), var(--violet));
+  border: 1px solid rgba(212, 135, 97, .4);
+  color: var(--cyan);
+  background: rgba(212, 135, 97, .1);
   font-weight: 900;
-  box-shadow: 0 0 22px rgba(104, 217, 239, .18);
+  box-shadow: none;
 }
 .heading { min-width: 0; }
 .heading strong, .heading span { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -83,7 +84,7 @@ code, .mono { font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation M
   height: 7px;
   border-radius: 50%;
   background: var(--green);
-  box-shadow: 0 0 10px var(--green);
+  box-shadow: 0 0 7px rgba(156, 199, 162, .45);
   content: "";
 }
 .toolbar-button {
@@ -91,10 +92,10 @@ code, .mono { font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation M
   border: 1px solid var(--line);
   border-radius: 8px;
   color: var(--text);
-  background: var(--panel-soft);
+  background: rgba(45, 39, 34, .7);
   cursor: pointer;
 }
-.toolbar-button:hover { border-color: rgba(104, 217, 239, .55); background: #223044; }
+.toolbar-button:hover { border-color: rgba(212, 135, 97, .5); background: var(--panel-soft); }
 
 .workspace {
   display: grid;
@@ -105,21 +106,25 @@ code, .mono { font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation M
 .detail-panel, .empty {
   border: 1px solid var(--line);
   border-radius: 14px;
-  background: rgba(17, 23, 34, .93);
+  background: rgba(29, 26, 23, .96);
   box-shadow: var(--shadow);
 }
-.graph-toolbar {
+.canvas-zoom-tools {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  z-index: 4;
   display: flex;
   align-items: center;
-  gap: 10px;
-  min-height: 52px;
-  padding: 10px 13px;
-  border-bottom: 1px solid var(--line-soft);
+  padding: 6px 7px;
+  border: 1px solid var(--line-soft);
+  border-radius: 10px;
+  background: rgba(29, 26, 23, .88);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, .2);
+  backdrop-filter: blur(12px);
 }
-.graph-toolbar h1 { margin: 0; font-size: 13px; }
-.graph-toolbar p { margin: 2px 0 0; color: var(--muted); font-size: 10px; }
-.graph-toolbar-copy { min-width: 0; }
 .graph-tools { display: flex; align-items: center; gap: 4px; margin-left: auto; }
+.canvas-zoom-tools .graph-tools { margin-left: 0; }
 .graph-tool {
   display: grid;
   place-items: center;
@@ -133,27 +138,18 @@ code, .mono { font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation M
 }
 .graph-tool:hover { color: var(--text); background: var(--panel-soft); }
 .zoom-label { min-width: 42px; color: var(--muted); text-align: center; font-size: 10px; }
-.legend { display: flex; align-items: center; gap: 11px; margin-left: 9px; color: var(--muted); font-size: 10px; white-space: nowrap; }
-.legend span { display: inline-flex; align-items: center; gap: 5px; }
-.legend i { display: inline-block; width: 17px; border-top: 2px solid var(--cyan); }
-.legend i.chronology { border-top-color: var(--violet); border-top-style: dashed; }
-.relation-switcher { display: inline-flex; align-items: center; gap: 3px; margin-left: 9px; padding: 3px; border: 1px solid var(--line-soft); border-radius: 9px; background: rgba(255, 255, 255, .025); }
-.relation-toggle { padding: 4px 7px; border-radius: 6px; color: var(--muted); background: transparent; cursor: pointer; font-size: 10px; white-space: nowrap; }
-.relation-toggle:hover { color: var(--text); background: var(--panel-soft); }
-.relation-toggle.active { color: #071014; background: var(--violet); font-weight: 800; }
-
 .canvas-viewport {
   position: relative;
   min-height: 0;
   max-height: calc(100vh - 205px);
-  overflow: auto;
+  overflow: hidden;
   cursor: grab;
   touch-action: none;
-  background-color: #0c1119;
+  background-color: #171411;
   background-image:
-    linear-gradient(rgba(148, 163, 184, .055) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(148, 163, 184, .055) 1px, transparent 1px),
-    radial-gradient(circle at 50% 25%, rgba(104, 217, 239, .06), transparent 34%);
+    linear-gradient(rgba(205, 184, 164, .035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(205, 184, 164, .035) 1px, transparent 1px),
+    radial-gradient(circle at 50% 25%, rgba(212, 135, 97, .028), transparent 34%);
   background-size: 32px 32px, 32px 32px, auto;
 }
 .canvas-viewport.is-dragging { cursor: grabbing; user-select: none; }
@@ -161,14 +157,15 @@ code, .mono { font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation M
   position: absolute;
   inset: 0;
   pointer-events: none;
-  background: linear-gradient(180deg, rgba(12, 17, 25, 0) 70%, rgba(12, 17, 25, .55));
+  background: linear-gradient(180deg, rgba(23, 20, 17, 0) 72%, rgba(23, 20, 17, .42));
   content: "";
 }
-.canvas-world { position: relative; flex: 0 0 auto; overflow: visible; transform-origin: top left; }
+.canvas-world { position: absolute; left: 0; top: 0; overflow: visible; transform-origin: top left; will-change: transform; }
 .graph-edges { position: absolute; inset: 0; overflow: visible; pointer-events: none; }
-.edge { fill: none; stroke-width: 2; vector-effect: non-scaling-stroke; }
-.edge.git { stroke: rgba(104, 217, 239, .72); marker-end: url(#arrow-git); }
-.edge.chronology { stroke: rgba(163, 148, 255, .78); stroke-dasharray: 5 6; marker-end: url(#arrow-chronology); }
+.edge { fill: none; stroke-linecap: round; vector-effect: non-scaling-stroke; }
+.edge.git { stroke: rgba(212, 135, 97, .78); stroke-width: 2.15; marker-start: url(#edge-origin); marker-end: url(#arrow-git); }
+.graph-edges #edge-origin circle { fill: #8f7964; }
+.graph-edges #arrow-git path { fill: var(--cyan); }
 .node-card {
   position: absolute;
   display: flex;
@@ -177,30 +174,31 @@ code, .mono { font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation M
   height: var(--node-height);
   min-height: var(--node-height);
   padding: 6px 8px;
-  border: 1px solid #34465a;
+  border: 1px solid #56463a;
   border-radius: 12px;
-  background: linear-gradient(150deg, #192535, #121a26 72%);
-  box-shadow: 0 16px 34px rgba(0, 0, 0, .3), inset 0 1px rgba(255, 255, 255, .035);
+  background: linear-gradient(150deg, #29231e, #1f1a17 72%);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, .28), inset 0 1px rgba(255, 244, 232, .025);
   cursor: pointer;
   transition: border-color .16s, box-shadow .16s, transform .16s;
 }
 .node-card::before {
+  display: none;
   position: absolute;
   top: 10px;
   left: -5px;
   width: 8px;
   height: 8px;
-  border: 2px solid #0c1119;
+  border: 2px solid #171411;
   border-radius: 50%;
   background: var(--cyan);
-  box-shadow: 0 0 0 1px var(--cyan), 0 0 16px rgba(104, 217, 239, .32);
+  box-shadow: 0 0 0 1px var(--cyan), 0 0 9px rgba(212, 135, 97, .2);
   content: "";
 }
 .node-card:hover, .node-card.selected {
   border-color: var(--cyan);
-  box-shadow: 0 20px 42px rgba(0, 0, 0, .36), 0 0 0 1px rgba(104, 217, 239, .16);
+  box-shadow: 0 16px 34px rgba(0, 0, 0, .34), 0 0 0 1px rgba(212, 135, 97, .12);
 }
-.node-card.selected { background: linear-gradient(150deg, #1b303a, #121e28 72%); }
+.node-card.selected { background: linear-gradient(150deg, #34251e, #241b17 72%); }
 .node-card-head { display: flex; align-items: center; gap: 6px; min-width: 0; }
 .node-card-label { color: var(--cyan); font-size: 8px; font-weight: 800; letter-spacing: .09em; text-transform: uppercase; }
 .node-icon { display: grid; flex: 0 0 auto; place-items: center; width: 20px; height: 20px; border-radius: 6px; color: var(--cyan); background: var(--cyan-soft); font-size: 11px; }
@@ -209,9 +207,9 @@ code, .mono { font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation M
 .node-time span { margin-right: 4px; color: var(--dim); }
 .field-label { display: block; margin-bottom: 3px; color: var(--dim); font-size: 9px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
 .node-card .field-label { margin-bottom: 2px; font-size: 8px; }
-.node-update { display: block; flex: 1 1 auto; min-width: 0; min-height: 0; margin-top: 3px; overflow: auto; scrollbar-color: rgba(148, 163, 184, .38) transparent; scrollbar-width: thin; }
+.node-update { display: block; flex: 1 1 auto; min-width: 0; min-height: 0; margin-top: 3px; overflow: auto; scrollbar-color: rgba(205, 184, 164, .32) transparent; scrollbar-width: thin; }
 .node-update::-webkit-scrollbar { width: 5px; }
-.node-update::-webkit-scrollbar-thumb { border-radius: 5px; background: rgba(148, 163, 184, .38); }
+.node-update::-webkit-scrollbar-thumb { border-radius: 5px; background: rgba(205, 184, 164, .32); }
 .node-update strong { display: block; overflow-wrap: anywhere; color: var(--text); font-size: 10px; line-height: 1.2; }
 .node-update p { margin: 1px 0 0; overflow-wrap: anywhere; color: var(--muted); font-size: 9px; line-height: 1.2; }
 .node-commit { display: flex; flex: 0 0 auto; align-items: center; gap: 6px; min-width: 0; margin-top: 3px; padding-top: 3px; border-top: 1px solid var(--line-soft); }
@@ -231,9 +229,9 @@ code, .mono { font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation M
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.card-action:hover { border-color: rgba(104, 217, 239, .55); color: var(--text); background: var(--panel-soft); }
-.card-action.primary { grid-column: 1 / -1; border-color: transparent; color: #071014; background: var(--cyan); font-weight: 800; }
-.card-action.primary:hover { background: #8de7f6; }
+.card-action:hover { border-color: rgba(212, 135, 97, .5); color: var(--text); background: var(--panel-soft); }
+.card-action.primary { grid-column: 1 / -1; border-color: transparent; color: #2a1b15; background: var(--cyan); font-weight: 800; }
+.card-action.primary:hover { background: #e3a17a; }
 .card-action[disabled] { cursor: wait; opacity: .6; }
 .detail-panel { position: sticky; top: 12px; align-self: start; max-height: calc(100vh - 30px); overflow: hidden; }
 .detail-header { display: flex; align-items: flex-start; gap: 10px; padding: 16px 16px 13px; border-bottom: 1px solid var(--line-soft); }
@@ -269,7 +267,7 @@ code, .mono { font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation M
 .relation button { min-width: 0; overflow: hidden; padding: 0; color: var(--cyan); background: transparent; cursor: pointer; text-align: left; text-overflow: ellipsis; white-space: nowrap; }
 .relation button:hover { text-decoration: underline; }
 .relation .none { color: var(--dim); }
-.comparison-summary { padding: 10px; border: 1px solid rgba(104, 217, 239, .25); border-radius: 9px; color: var(--muted); background: var(--cyan-soft); font-size: 11px; }
+.comparison-summary { padding: 10px; border: 1px solid rgba(212, 135, 97, .24); border-radius: 9px; color: var(--muted); background: var(--cyan-soft); font-size: 11px; }
 .resume-result { margin-top: 14px; padding: 11px; border: 1px solid rgba(111, 231, 174, .3); border-radius: 9px; background: var(--green-soft); }
 .resume-result strong { display: block; color: var(--green); font-size: 11px; }
 .resume-result p { margin: 4px 0 0; color: var(--muted); font-size: 10px; }
@@ -281,21 +279,19 @@ code, .mono { font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation M
 .resume-actions { display: grid; grid-template-columns: 1fr; gap: 7px; margin-top: 9px; }
 .detail-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; padding: 12px 16px 16px; border-top: 1px solid var(--line-soft); }
 .detail-actions button { min-height: 31px; padding: 7px 8px; border: 1px solid var(--line); border-radius: 8px; color: var(--muted); background: var(--panel-soft); cursor: pointer; font-size: 10px; }
-.detail-actions button:hover { border-color: rgba(104, 217, 239, .55); color: var(--text); }
-.detail-actions button.primary { grid-column: 1 / -1; border-color: transparent; color: #071014; background: var(--cyan); font-weight: 800; }
+.detail-actions button:hover { border-color: rgba(212, 135, 97, .5); color: var(--text); }
+.detail-actions button.primary { grid-column: 1 / -1; border-color: transparent; color: #2a1b15; background: var(--cyan); font-weight: 800; }
 .detail-actions button[disabled] { cursor: wait; opacity: .6; }
 .empty { margin: 18px; padding: 46px 24px; text-align: center; }
 .empty .eyebrow { color: var(--cyan); font-size: 10px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }
 .empty h1 { margin: 7px 0 4px; font-size: 18px; }
 .empty p { margin: 0; color: var(--muted); }
 .error-text { color: var(--danger); }
-.toast { position: fixed; right: 20px; bottom: 20px; z-index: 20; max-width: min(440px, calc(100vw - 40px)); padding: 10px 13px; border: 1px solid var(--line); border-radius: 9px; color: var(--text); background: #17212e; box-shadow: 0 16px 40px rgba(0, 0, 0, .4); opacity: 0; pointer-events: none; transform: translateY(7px); transition: .18s; }
+.toast { position: fixed; right: 20px; bottom: 20px; z-index: 20; max-width: min(440px, calc(100vw - 40px)); padding: 10px 13px; border: 1px solid var(--line); border-radius: 9px; color: var(--text); background: #17222d; box-shadow: 0 14px 30px rgba(0, 0, 0, .28); opacity: 0; pointer-events: none; transform: translateY(7px); transition: .18s; }
 .toast.show { opacity: 1; transform: none; }
 
 @media (max-width: 1050px) {
   .workspace { grid-template-columns: minmax(0, 1fr) 320px; }
-  .legend { display: none; }
-  .relation-switcher { margin-left: 0; }
 }
 @media (max-width: 780px) {
   .topbar { padding-inline: 13px; }
@@ -307,9 +303,7 @@ code, .mono { font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation M
 }
 @media (max-width: 520px) {
   .heading span { max-width: 170px; }
-  .graph-toolbar { align-items: flex-start; flex-wrap: wrap; }
   .graph-tools { flex-wrap: wrap; justify-content: flex-end; }
-  .relation-switcher { margin-left: auto; }
   .node-card { --node-width: 236px; }
 }
 /* Full-browser canvas mode: the graph is the page surface, not a card inside it. */
@@ -335,26 +329,6 @@ body {
   padding: 0;
 }
 
-.graph-toolbar {
-  position: absolute;
-  top: 14px;
-  left: 14px;
-  right: 14px;
-  z-index: 4;
-  min-height: 44px;
-  padding: 8px 10px;
-  border: 1px solid var(--line-soft);
-  border-radius: 10px;
-  background: rgba(8, 11, 17, 0.78);
-  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.2);
-  backdrop-filter: blur(12px);
-  pointer-events: none;
-}
-
-.graph-toolbar > * {
-  pointer-events: auto;
-}
-
 .canvas-viewport {
   position: absolute;
   inset: 0;
@@ -362,7 +336,7 @@ body {
   height: 100%;
   min-height: 0;
   max-height: none;
-  overflow: auto;
+  overflow: hidden;
 }
 
 .detail-panel {
@@ -417,15 +391,20 @@ const NODE_HEIGHT = 88;
 const HORIZONTAL_GAP = 96;
 const VERTICAL_GAP = 56;
 const CANVAS_PADDING = 32;
-const MIN_ZOOM = .55;
-const MAX_ZOOM = 1.8;
+const MIN_ZOOM = .25;
+const MAX_ZOOM = 2;
+const AUTO_REFRESH_INTERVAL = 3000;
 const state = {
   payload: null,
   selectedId: null,
   connected: false,
   zoom: 1,
-  relationshipMode: "implementation",
-  viewportScroll: { left: 0, top: 0 },
+  pan: { x: 0, y: 0 },
+  autoRefreshTimer: null,
+  autoRefreshInFlight: false,
+  repositoryRevision: null,
+  lastAutoRefreshAt: null,
+  centerViewportOnNextRender: false,
   suppressCardClickUntil: 0,
   positions: new Map(),
   bounds: { width: CANVAS_PADDING * 2 + NODE_WIDTH, height: CANVAS_PADDING * 2 + NODE_HEIGHT },
@@ -571,14 +550,17 @@ async function copyResumePrompt() {
 function applyGraphResult(result) {
   const payload = resultValue(result);
   if (!payload?.graph || !Array.isArray(payload.graph.nodes)) return false;
+  const isInitialGraph = !state.payload;
   const previousSelection = state.selectedId;
   state.payload = payload;
   state.selectedId = payload.graph.nodes.some((node) => node.id === previousSelection)
     ? previousSelection
     : payload.graph.nodes[0]?.id ?? null;
   state.connected = true;
+  state.repositoryRevision = repositoryRevision(payload.status);
   state.positions = layoutGraph(payload.graph);
   state.comparison = null;
+  state.centerViewportOnNextRender = isInitialGraph;
   render();
   return true;
 }
@@ -650,28 +632,53 @@ function layoutGraph(data) {
   return positions;
 }
 
-function edgePath(from, to, kind) {
+function edgePath(from, to, routeOffset = 0) {
   const source = state.positions.get(from);
   const target = state.positions.get(to);
   if (!source || !target) return null;
-  const offset = kind === "git" ? -9 : 9;
-  const startX = source.left + NODE_WIDTH;
-  const startY = source.top + NODE_HEIGHT / 2 + offset;
-  const endX = target.left;
-  const endY = target.top + NODE_HEIGHT / 2 + offset;
+  const offset = -9;
+  const startX = source.left + NODE_WIDTH + 9;
+  const startY = source.top + NODE_HEIGHT / 2 + offset + routeOffset;
+  const endX = target.left - 12;
+  const endY = target.top + NODE_HEIGHT / 2 + offset + routeOffset;
   const direction = endX >= startX ? 1 : -1;
   const distance = Math.max(48, Math.abs(endX - startX) * .46);
   return "M " + startX + " " + startY + " C " + (startX + distance * direction) + " " + startY + ", " + (endX - distance * direction) + " " + endY + ", " + endX + " " + endY;
 }
 
 function graphEdges(data) {
-  const paths = (pairs, kind) => (Array.isArray(pairs) ? pairs : []).map(([from, to]) => {
-    const path = edgePath(from, to, kind);
-    return path ? '<path class="edge ' + kind + '" d="' + path + '"><title>' + (kind === "git" ? "Git ancestry" : "Chronology") + '</title></path>' : "";
-  }).join("");
-  const kind = state.relationshipMode === "time" ? "chronology" : "git";
-  const pairs = kind === "git" ? data.gitEdges : data.chronologyEdges;
-  return '<svg class="graph-edges" width="' + state.bounds.width + '" height="' + state.bounds.height + '" viewBox="0 0 ' + state.bounds.width + ' ' + state.bounds.height + '" aria-hidden="true"><defs><marker id="arrow-git" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#68d9ef"></path></marker><marker id="arrow-chronology" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M 0 0 L 10 5 L 0 10 z" fill="#a394ff"></path></marker></defs>' + paths(pairs, kind) + "</svg>";
+  const paths = (pairs) => {
+    const seen = new Set();
+    const routesBySource = new Map();
+    const routesByTarget = new Map();
+    const uniquePairs = (Array.isArray(pairs) ? pairs : []).filter(([from, to]) => {
+      const key = from + "->" + to;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+    const sourceCounts = new Map();
+    const targetCounts = new Map();
+    for (const [from, to] of uniquePairs) {
+      sourceCounts.set(from, (sourceCounts.get(from) ?? 0) + 1);
+      targetCounts.set(to, (targetCounts.get(to) ?? 0) + 1);
+    }
+    return uniquePairs.map(([from, to]) => {
+      const sourceRoute = routesBySource.get(from) ?? 0;
+      const targetRoute = routesByTarget.get(to) ?? 0;
+      routesBySource.set(from, sourceRoute + 1);
+      routesByTarget.set(to, targetRoute + 1);
+      const laneCount = Math.max(sourceCounts.get(from) ?? 1, targetCounts.get(to) ?? 1);
+      const laneIndex = sourceRoute + targetRoute;
+      const routeOffset = laneCount > 1 ? (laneIndex - (laneCount - 1) / 2) * 7 : 0;
+      const path = edgePath(from, to, routeOffset);
+      const sourceTitle = baseNode(from)?.title || from;
+      const targetTitle = baseNode(to)?.title || to;
+      const label = "Git ancestry: " + sourceTitle + " → " + targetTitle;
+      return path ? '<path class="edge git" data-edge-from="' + esc(from) + '" data-edge-to="' + esc(to) + '" d="' + path + '"><title>' + esc(label) + '</title></path>' : "";
+    }).join("");
+  };
+  return '<svg class="graph-edges" width="' + state.bounds.width + '" height="' + state.bounds.height + '" viewBox="0 0 ' + state.bounds.width + ' ' + state.bounds.height + '" aria-hidden="true"><defs><marker id="edge-origin" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="7" markerHeight="7" markerUnits="userSpaceOnUse" orient="auto"><circle cx="5" cy="5" r="3"></circle></marker><marker id="arrow-git" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="8" markerHeight="8" markerUnits="userSpaceOnUse" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#d48761"></path></marker></defs>' + paths(data.gitEdges) + "</svg>";
 }
 
 function card(node, index) {
@@ -696,7 +703,7 @@ function fileRows(node) {
 function derivedNodes(node) {
   const data = graph();
   const ids = new Set();
-  for (const [from, to] of [...(data?.gitEdges ?? []), ...(data?.chronologyEdges ?? [])]) {
+  for (const [from, to] of (data?.gitEdges ?? [])) {
     if (from === node?.id) ids.add(to);
   }
   return [...ids].map((id) => baseNode(id)).filter(Boolean);
@@ -717,7 +724,7 @@ function detailBody(node) {
   }
   if (state.detailTab === "relations") {
     const derived = derivedNodes(node);
-    return '<section class="detail-section"><h3>Parent Node / Derived Nodes</h3><div class="relation-list"><div class="relation"><span>Git Parent</span>' + relationButton(node.gitParent || node.parentNodeId, baseNode(node.gitParent || node.parentNodeId)?.title) + '</div><div class="relation"><span>Chronological Parent</span>' + relationButton(node.chronologicalParent, baseNode(node.chronologicalParent)?.title) + '</div><div class="relation"><span>Derived Nodes</span><span>' + (derived.length ? derived.map((child) => '<button data-select="' + esc(child.id) + '">' + esc(child.title) + '</button>').join("、") : '<span class="none">—</span>') + '</span></div></div></section>';
+    return '<section class="detail-section"><h3>Parent Node / Derived Nodes</h3><div class="relation-list"><div class="relation"><span>Git Parent</span>' + relationButton(node.gitParent || node.parentNodeId, baseNode(node.gitParent || node.parentNodeId)?.title) + '</div><div class="relation"><span>Derived Nodes</span><span>' + (derived.length ? derived.map((child) => '<button data-select="' + esc(child.id) + '">' + esc(child.title) + '</button>').join("、") : '<span class="none">—</span>') + '</span></div></div></section>';
   }
   return '<section class="detail-section"><h3>本次目标</h3><p>' + esc(node.goal || node.changes || "未记录目标") + '</p></section><section class="detail-section"><h3>AI Discussion Summary</h3><p>' + esc(conversationSummary(node)) + '</p></section><section class="detail-section"><h3>Key Decisions</h3><p>' + esc(decisionText(node)) + '</p></section><section class="detail-section"><h3>Warnings</h3><p class="' + (warningText(node) === "无" ? "" : "warning") + '">' + esc(warningText(node)) + '</p></section>';
 }
@@ -734,22 +741,69 @@ function detailPanel(node) {
   return '<aside class="detail-panel" aria-label="Trace Card 详情"><header class="detail-header"><div class="node-icon">◆</div><div class="detail-heading"><div class="eyebrow">Selected Trace Card</div><h2>' + esc(node.title) + '</h2><p>' + esc(formatDate(node.createdAt)) + ' · ' + esc(node.commit) + '</p></div><button class="close-detail" data-action="close-detail" aria-label="关闭详情">×</button></header><nav class="detail-tabs" aria-label="版本详情"><button class="detail-tab ' + (state.detailTab === "overview" ? "active" : "") + '" data-tab="overview">概览</button><button class="detail-tab ' + (state.detailTab === "diff" ? "active" : "") + '" data-tab="diff">Code Diff</button><button class="detail-tab ' + (state.detailTab === "conversation" ? "active" : "") + '" data-tab="conversation">Conversation</button><button class="detail-tab ' + (state.detailTab === "relations" ? "active" : "") + '" data-tab="relations">关系</button></nav><div class="detail-scroll"><div class="detail-commit-pair"><div><span class="field-label">当前提交</span><code title="' + esc(node.commit) + '">' + esc(node.commit) + '</code></div><span>vs.</span><div><span class="field-label">上一历史版本</span><code title="' + esc(node.parent) + '">' + esc(node.parent) + '</code></div></div>' + detailBody(node) + resumeMarkup + relationMarkup + '</div><div class="detail-actions"><button data-action="details" data-node="' + esc(node.id) + '">同步完整详情</button><button data-action="compare" data-node="' + esc(node.id) + '">比较当前</button><button class="primary" data-action="resume" data-node="' + esc(node.id) + '" ' + (runningResume ? "disabled" : "") + '>' + (runningResume ? "正在切换当前工作区…" : "从此版本继续") + '</button></div></aside>';
 }
 
-function centerCanvasWorld() {
+function updateCanvasTransform() {
+  const world = document.querySelector(".canvas-world");
+  if (!world) return;
+  world.style.transform = "translate(" + state.pan.x + "px, " + state.pan.y + "px) scale(" + state.zoom + ")";
+}
+
+function repositoryRevision(status) {
+  if (!status || typeof status !== "object") return null;
+  return [
+    status.head ?? "—",
+    status.branch ?? "—",
+    status.dirty ? "dirty" : "clean",
+    status.untrackedCount ?? 0,
+    status.operationState ?? "none"
+  ].join("|");
+}
+
+async function refreshGraphAutomatically() {
+  if (!browserConfig || !state.payload || state.autoRefreshInFlight) return;
+  state.autoRefreshInFlight = true;
+  try {
+    const result = await callTool("trace.get_status", { repository: browserConfig.repository });
+    const error = errorFromResult(result);
+    if (error) throw error;
+    const revision = repositoryRevision(resultValue(result));
+    if (!revision || revision === state.repositoryRevision) return;
+    const refreshed = await callTool("trace.render_graph", renderGraphArguments());
+    const refreshError = errorFromResult(refreshed);
+    if (refreshError) throw refreshError;
+    if (!applyGraphResult(refreshed)) throw new Error("自动更新返回了无效的 Trace Graph。");
+    state.lastAutoRefreshAt = Date.now();
+    notify("检测到仓库更新，Trace 图已自动同步。");
+  } catch {
+    // Keep the current graph usable; the manual refresh action remains available.
+  } finally {
+    state.autoRefreshInFlight = false;
+  }
+}
+
+function startAutoRefresh() {
+  if (!browserConfig || state.autoRefreshTimer !== null || typeof window.setInterval !== "function") return;
+  state.autoRefreshTimer = window.setInterval(() => {
+    void refreshGraphAutomatically();
+  }, AUTO_REFRESH_INTERVAL);
+}
+
+function centerCanvasWorld(centerViewport = false) {
   const viewport = document.querySelector(".canvas-viewport");
   const world = viewport?.querySelector?.(".canvas-world");
   if (!viewport || !world) return;
   const scaledWidth = state.bounds.width * state.zoom;
   const scaledHeight = state.bounds.height * state.zoom;
-  world.style.marginLeft = Math.max(32, (viewport.clientWidth - scaledWidth) / 2) + "px";
-  world.style.marginTop = Math.max(32, (viewport.clientHeight - scaledHeight) / 2) + "px";
+  if (centerViewport) {
+    state.pan = {
+      x: (viewport.clientWidth - scaledWidth) / 2,
+      y: (viewport.clientHeight - scaledHeight) / 2
+    };
+  }
+  updateCanvasTransform();
 }
 
 function render() {
   const root = document.getElementById("app");
-  const previousViewport = root.querySelector(".canvas-viewport");
-  if (previousViewport) {
-    state.viewportScroll = { left: previousViewport.scrollLeft, top: previousViewport.scrollTop };
-  }
   const data = graph();
   if (!data) {
     const heading = browserConfig ? "正在读取当前项目的 Git 历史…" : "浏览器地址无效";
@@ -761,17 +815,18 @@ function render() {
   }
   const nodes = graphNodes();
   const current = selected();
-  const relationshipLabel = state.relationshipMode === "time" ? "时间关系" : "实现关系";
-  const worldStyle = "width:" + state.bounds.width + "px;height:" + state.bounds.height + "px;zoom:" + state.zoom;
+  const worldStyle = "width:" + state.bounds.width + "px;height:" + state.bounds.height + "px";
   const emptyOrGraph = nodes.length === 0
     ? "<main class=\"empty\"><div class=\"eyebrow\">Repository connected</div><h1>当前项目还没有 Trace Card</h1><p>创建第一个 Git 提交后点击刷新，版本卡会出现在项目图中。</p></main>"
-    : "<main class=\"workspace\"><div class=\"graph-toolbar\"><div class=\"graph-toolbar-copy\"><h1>项目版本画布</h1><p>卡片位置按上一版本的实现关系排列 · 点击卡片查看完整详情</p></div><div class=\"graph-tools\"><button class=\"graph-tool\" data-action=\"zoom-out\" aria-label=\"缩小\">−</button><span class=\"zoom-label\">" + Math.round(state.zoom * 100) + "%</span><button class=\"graph-tool\" data-action=\"zoom-in\" aria-label=\"放大\">＋</button><button class=\"graph-tool\" data-action=\"zoom-reset\" aria-label=\"重置缩放\">⌂</button></div><div class=\"relation-switcher\" role=\"group\" aria-label=\"关系视图\"><button class=\"relation-toggle " + (state.relationshipMode === "implementation" ? "active" : "") + "\" data-action=\"set-relation\" data-relation=\"implementation\" aria-pressed=\"" + (state.relationshipMode === "implementation" ? "true" : "false") + "\">实现关系</button><button class=\"relation-toggle " + (state.relationshipMode === "time" ? "active" : "") + "\" data-action=\"set-relation\" data-relation=\"time\" aria-pressed=\"" + (state.relationshipMode === "time" ? "true" : "false") + "\">时间关系</button></div><div class=\"legend\"><span><i class=\"" + (state.relationshipMode === "time" ? "chronology" : "") + "\"></i>" + relationshipLabel + "</span></div></div><div class=\"canvas-viewport\" aria-label=\"项目版本画布，可拖动和缩放\"><div class=\"canvas-world\" style=\"" + worldStyle + "\">" + graphEdges(data) + nodes.map(card).join("") + "</div></div>" + detailPanel(current) + "</main>";
-  root.innerHTML = "<div class=\"shell\"><header class=\"topbar\"><div class=\"brand-mark\">↗</div><div class=\"heading\"><strong>" + esc(data.name) + " · Project Trace Graph</strong><span>" + esc(data.branch) + " · " + esc(data.status) + "</span></div><div class=\"topbar-spacer\"></div><div class=\"connection\">" + (state.connected ? "本地数据服务" : "连接中") + "</div><button class=\"toolbar-button\" data-action=\"refresh\">刷新</button></header>" + emptyOrGraph + "</div>";
+    : "<main class=\"workspace\"><div class=\"canvas-zoom-tools\" aria-label=\"缩放控制\"><div class=\"graph-tools\"><button class=\"graph-tool\" data-action=\"zoom-out\" aria-label=\"缩小\">−</button><span class=\"zoom-label\">" + Math.round(state.zoom * 100) + "%</span><button class=\"graph-tool\" data-action=\"zoom-in\" aria-label=\"放大\">＋</button><button class=\"graph-tool\" data-action=\"zoom-reset\" aria-label=\"重置缩放\">⌂</button></div></div><div class=\"canvas-viewport\" aria-label=\"项目版本图谱，可拖动和缩放\"><div class=\"canvas-world\" style=\"" + worldStyle + "\">" + graphEdges(data) + nodes.map(card).join("") + "</div></div>" + detailPanel(current) + "</main>";
+  root.innerHTML = "<div class=\"shell\"><header class=\"topbar\"><div class=\"brand-mark\">↗</div><div class=\"heading\"><strong>" + esc(data.name) + " · Project Trace Graph</strong><span>" + esc(data.branch) + " · " + esc(data.status) + "</span></div><div class=\"topbar-spacer\"></div><div class=\"connection\">" + (state.connected ? "本地数据服务 · 自动同步" : "连接中") + "</div><button class=\"toolbar-button\" data-action=\"refresh\">刷新</button></header>" + emptyOrGraph + "</div>";
   const viewport = root.querySelector(".canvas-viewport");
   if (viewport) {
-    centerCanvasWorld();
-    viewport.scrollLeft = state.viewportScroll.left;
-    viewport.scrollTop = state.viewportScroll.top;
+    const centerViewport = state.centerViewportOnNextRender;
+    centerCanvasWorld(centerViewport);
+    if (centerViewport) {
+      state.centerViewportOnNextRender = false;
+    }
   }
   bindCanvasGestures();
 }
@@ -788,24 +843,18 @@ function zoomAtPointer(nextZoom, clientX, clientY) {
     render();
     return;
   }
+  if (zoom === state.zoom) return;
   const rect = viewport.getBoundingClientRect();
   const pointerX = Math.min(Math.max(clientX - rect.left, 0), rect.width);
   const pointerY = Math.min(Math.max(clientY - rect.top, 0), rect.height);
-  const world = viewport.querySelector?.(".canvas-world");
-  const marginLeft = Number.parseFloat(world?.style?.marginLeft || "0") || 0;
-  const marginTop = Number.parseFloat(world?.style?.marginTop || "0") || 0;
-  const worldX = (viewport.scrollLeft + pointerX - marginLeft) / state.zoom;
-  const worldY = (viewport.scrollTop + pointerY - marginTop) / state.zoom;
+  const worldX = (pointerX - state.pan.x) / state.zoom;
+  const worldY = (pointerY - state.pan.y) / state.zoom;
   state.zoom = zoom;
+  state.pan = {
+    x: pointerX - worldX * zoom,
+    y: pointerY - worldY * zoom
+  };
   render();
-  const nextViewport = document.querySelector(".canvas-viewport");
-  if (!nextViewport) return;
-  const nextWorld = nextViewport.querySelector?.(".canvas-world");
-  const nextMarginLeft = Number.parseFloat(nextWorld?.style?.marginLeft || "0") || 0;
-  const nextMarginTop = Number.parseFloat(nextWorld?.style?.marginTop || "0") || 0;
-  nextViewport.scrollLeft = Math.max(0, worldX * zoom + nextMarginLeft - pointerX);
-  nextViewport.scrollTop = Math.max(0, worldY * zoom + nextMarginTop - pointerY);
-  state.viewportScroll = { left: nextViewport.scrollLeft, top: nextViewport.scrollTop };
 }
 
 function zoomAtViewportCenter(nextZoom) {
@@ -827,16 +876,12 @@ async function act(action, nodeId, relation) {
       const error = errorFromResult(result);
       if (error) throw error;
       if (!applyGraphResult(result)) throw new Error("Trace Graph 返回了无效数据。");
+      startAutoRefresh();
       notify("项目 Trace Graph 已刷新。");
       return;
     }
     if (action === "close-detail") {
       state.detailOpen = false;
-      render();
-      return;
-    }
-    if (action === "set-relation") {
-      state.relationshipMode = relation === "time" ? "time" : "implementation";
       render();
       return;
     }
@@ -931,6 +976,7 @@ async function loadInitialGraph() {
     const error = errorFromResult(result);
     if (error) throw error;
     if (!applyGraphResult(result)) throw new Error("Trace Graph 返回了无效数据。");
+    startAutoRefresh();
   } catch (error) {
     state.connected = false;
     notify("加载失败：" + (error?.message ?? "无法连接本地数据服务。"));
@@ -995,8 +1041,8 @@ function bindCanvasGestures() {
     drag = {
       x: event.clientX,
       y: event.clientY,
-      scrollLeft: viewport.scrollLeft,
-      scrollTop: viewport.scrollTop,
+      panX: state.pan.x,
+      panY: state.pan.y,
       card: Boolean(target?.closest(".node-card")),
       moved: false
     };
@@ -1013,9 +1059,9 @@ function bindCanvasGestures() {
       }
     }
     event.preventDefault();
-    viewport.scrollLeft = drag.scrollLeft - (event.clientX - drag.x);
-    viewport.scrollTop = drag.scrollTop - (event.clientY - drag.y);
-    state.viewportScroll = { left: viewport.scrollLeft, top: viewport.scrollTop };
+    state.pan.x = drag.panX + event.clientX - drag.x;
+    state.pan.y = drag.panY + event.clientY - drag.y;
+    updateCanvasTransform();
   });
 
   const stopDragging = () => {

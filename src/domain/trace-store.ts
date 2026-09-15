@@ -11,6 +11,7 @@ export type TraceNodeList = Readonly<{
 
 export interface TraceStore {
   findRepositoryByPath(repositoryPath: string): RegisteredRepository | null;
+  findRepositoryByCommonDirectory(commonDirectory: string): RegisteredRepository | null;
   getRepository(repositoryId: string): RegisteredRepository | null;
   saveRepository(repository: RegisteredRepository): void;
   getOperation(operationId: string): OperationRecord | null;

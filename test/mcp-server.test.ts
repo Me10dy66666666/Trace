@@ -10,7 +10,7 @@ import { test } from "node:test";
 import { StdioServerTransport } from "@modelcontextprotocol/server/stdio";
 
 import { TraceService } from "../src/application/trace-service.js";
-import { createTraceMcpServer } from "../src/mcp/create-trace-mcp-server.js";
+import { buildTraceGraph, createTraceMcpServer } from "../src/mcp/create-trace-mcp-server.js";
 import { createTraceGraphBrowserServer } from "../src/mcp/trace-graph-browser-server.js";
 import { GitCli } from "../src/infrastructure/git-cli.js";
 import { RepositoryLockManager } from "../src/infrastructure/repository-lock-manager.js";
@@ -361,6 +361,25 @@ test("refreshes the top-level Trace Graph through the local browser API", async 
     assert.equal(firstResponse.status, 200);
     assert.equal(firstPayload.structuredContent.graph.nodes.length, 1);
 
+    const statusCall = async () => {
+      const url = new URL("/api/tool", pageUrl);
+      url.searchParams.set("token", "test-token");
+      return await fetch(url, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          name: "trace.get_status",
+          arguments: { repository: repositoryPath }
+        })
+      });
+    };
+    const firstStatusResponse = await statusCall();
+    const firstStatusPayload = await firstStatusResponse.json() as Readonly<{
+      structuredContent: Readonly<{ head: string | null; branch: string | null }>;
+    }>;
+    assert.equal(firstStatusResponse.status, 200);
+    assert.equal(firstStatusPayload.structuredContent.head, await git(repositoryPath, "rev-parse", "HEAD"));
+
     await writeFile(join(repositoryPath, "README.md"), "base\nsecond\n", "utf8");
     await git(repositoryPath, "add", "README.md");
     await git(repositoryPath, "commit", "-m", "feat: second");
@@ -371,8 +390,75 @@ test("refreshes the top-level Trace Graph through the local browser API", async 
     }>;
     assert.equal(refreshedResponse.status, 200);
     assert.equal(refreshedPayload.structuredContent.graph.nodes.length, 2);
+
+    const secondStatusResponse = await statusCall();
+    const secondStatusPayload = await secondStatusResponse.json() as Readonly<{
+      structuredContent: Readonly<{ head: string | null; branch: string | null }>;
+    }>;
+    assert.equal(secondStatusResponse.status, 200);
+    assert.notEqual(secondStatusPayload.structuredContent.head, firstStatusPayload.structuredContent.head);
   } finally {
     await browser.close();
+    store.close();
+    await rm(fixtureRoot, { force: true, recursive: true });
+  }
+});
+
+test("renders parallel branch nodes in one project Trace Graph", async () => {
+  const fixtureRoot = await mkdtemp(join(tmpdir(), "traceandback-mcp-branches-"));
+  const repositoryPath = join(fixtureRoot, "repository");
+  const linkedPath = join(fixtureRoot, "linked-worktree");
+  const store = new SqliteTraceStore(join(fixtureRoot, "trace.db"));
+  const service = new TraceService({
+    git: new GitCli(),
+    locks: new RepositoryLockManager(),
+    store
+  });
+
+  try {
+    await git(fixtureRoot, "init", "--initial-branch=main", "repository");
+    await git(repositoryPath, "config", "user.name", "Trace Test");
+    await git(repositoryPath, "config", "user.email", "trace@example.test");
+    await writeFile(join(repositoryPath, "README.md"), "base\n", "utf8");
+    await git(repositoryPath, "add", "README.md");
+    await git(repositoryPath, "commit", "-m", "feat: base");
+    const baseCommit = await git(repositoryPath, "rev-parse", "HEAD");
+
+    const repository = await service.registerRepository({ repositoryPath });
+    await writeFile(join(repositoryPath, "README.md"), "base\nmain\n", "utf8");
+    await git(repositoryPath, "add", "README.md");
+    await git(repositoryPath, "commit", "-m", "feat: main line");
+    await service.getGitHistory({ repositoryId: repository.id, limit: 50, repositoryPath });
+
+    await git(repositoryPath, "worktree", "add", "-b", "session-a", linkedPath, baseCommit);
+    await writeFile(join(linkedPath, "README.md"), "base\nparallel\n", "utf8");
+    await git(linkedPath, "add", "README.md");
+    await git(linkedPath, "commit", "-m", "feat: parallel line");
+
+    const linkedRepository = await service.registerRepository({ repositoryPath: linkedPath });
+    assert.equal(linkedRepository.id, repository.id);
+    await service.getGitHistory({
+      repositoryId: linkedRepository.id,
+      limit: 50,
+      repositoryPath: linkedPath
+    });
+
+    const rendered = await buildTraceGraph(service, {
+      repository: repositoryPath,
+      limit: 50,
+      cursor: null
+    });
+    const graph = rendered.graph as Readonly<{
+      nodes: readonly Readonly<{ title: string }>[];
+      gitEdges: readonly (readonly [string, string])[];
+    }>;
+    assert.deepEqual(
+      new Set(graph.nodes.map((node) => node.title)),
+      new Set(["feat: base", "feat: main line", "feat: parallel line"])
+    );
+    assert.equal(graph.gitEdges.length, 2);
+  } finally {
+    await git(repositoryPath, "worktree", "remove", "--force", linkedPath).catch(() => undefined);
     store.close();
     await rm(fixtureRoot, { force: true, recursive: true });
   }
