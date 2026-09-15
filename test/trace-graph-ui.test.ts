@@ -189,14 +189,21 @@ test("opens Trace Card details after a stationary click in the standalone browse
   assert.ok(root.detail, "a stationary card click should render the detail panel");
 });
 
-test("renders graph edges with explicit endpoints and visible direction markers", async () => {
+test("renders Git graph edges with explicit endpoints and visible direction markers", async () => {
   const { html } = await loadUi();
 
   assert.match(html, /data-edge-from=/, "each edge should expose its source node");
   assert.match(html, /data-edge-to=/, "each edge should expose its target node");
   assert.match(html, /marker-start: url\(#edge-origin\)/, "each edge should show its origin");
-  assert.match(html, /marker-end: url\(#arrow-chronology\)/, "time edges should show their direction");
+  assert.match(html, /marker-end: url\(#arrow-git\)/, "Git edges should show their direction");
   assert.match(html, /routesByTarget/, "parallel edges should be routed into separate lanes");
+});
+
+test("keeps only the zoom controls in the graph overlay", async () => {
+  const { html } = await loadUi();
+
+  assert.match(html, /canvas-zoom-tools/, "the overlay should be dedicated to zoom controls");
+  assert.doesNotMatch(html, /graph-toolbar|项目版本画布|时间关系|实现关系|relationshipMode/);
 });
 
 test("keeps manual refresh and enables repository status polling", async () => {
