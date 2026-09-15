@@ -16,6 +16,11 @@ coverage/
 /CONTEXT.md
 *.docx
 
+# Keep README screenshots tracked while other docs remain local-only.
+!/docs/
+!/docs/assets/
+!/docs/assets/**
+
 # Keep the public project guide and the packaged host Skill tracked.
 !/README.md
 !/skills/

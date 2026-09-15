@@ -203,7 +203,7 @@ test("trace.start opens the current project graph without arguments", async () =
     const content = rendered.result?.content as readonly Readonly<{ type: string; text?: string }>[];
     const payload = JSON.parse(content[0]?.text ?? "") as Readonly<{
       repository: Readonly<{ path: string }>;
-      graph: Readonly<{ name: string; nodes: readonly unknown[] }>;
+      graph: Readonly<{ name: string; nodes: readonly Readonly<Record<string, unknown>>[] }>;
       browser: Readonly<{
         action: string;
         target: string;
@@ -213,6 +213,7 @@ test("trace.start opens the current project graph without arguments", async () =
     assert.equal(payload.repository.path, repositoryPath);
     assert.equal(payload.graph.name, "repository");
     assert.equal(payload.graph.nodes.length, 1);
+    assert.equal("changedFiles" in (payload.graph.nodes[0] ?? {}), false);
     assert.equal(payload.browser.action, "open_in_codex");
     assert.equal(payload.browser.target, "browser");
     const browserUrl = new URL(payload.browser.url);
@@ -309,6 +310,8 @@ test("opens a standalone Trace Graph from the registered repository Git history"
     }>;
     assert.deepEqual(payload.graph.nodes.map((node) => node.commit), expectedCommits);
     assert.deepEqual(payload.graph.nodes.map((node) => node.title), ["feat: second", "feat: base"]);
+    const firstGraphNode = payload.graph.nodes[0] as Readonly<{ changedFiles?: unknown }>;
+    assert.ok(Array.isArray(firstGraphNode.changedFiles));
   } finally {
     await client.close();
     store.close();

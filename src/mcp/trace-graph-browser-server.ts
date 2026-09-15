@@ -87,7 +87,12 @@ async function callBrowserTool(
     case "trace.render_graph": {
       const repository = optionalString(args, "repository");
       if (repository === undefined) throw new Error("Browser API requires repository.");
-      return await buildTraceGraph(trace, { repository, limit: limit(args), cursor: cursor(args) });
+      return await buildTraceGraph(trace, {
+        repository,
+        limit: limit(args),
+        cursor: cursor(args),
+        detailLevel: "summary"
+      });
     }
     case "trace.get_status": {
       const repository = optionalString(args, "repository");
