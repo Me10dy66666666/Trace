@@ -100,7 +100,7 @@ async function createClient(server: ReturnType<typeof createTraceMcpServer>): Pr
   };
 }
 
-test("exposes the eight v1 trace.* Tools over MCP stdio", async () => {
+test("exposes the v1 trace.* Tools over MCP stdio", async () => {
   const fixtureRoot = await mkdtemp(join(tmpdir(), "traceandback-mcp-"));
   const repositoryPath = join(fixtureRoot, "repository");
   const store = new SqliteTraceStore(join(fixtureRoot, "trace.db"));
@@ -139,7 +139,11 @@ test("exposes the eight v1 trace.* Tools over MCP stdio", async () => {
       "trace.get_node",
       "trace.get_status",
       "trace.render_graph",
-      "trace.resume_from"
+      "trace.resume_from",
+      "trace.start",
+      "trace_finalize_commit",
+      "trace_finalize_session",
+      "trace_update_summary"
     ]);
 
     const statusResponse = await client.request("tools/call", {
@@ -159,6 +163,67 @@ test("exposes the eight v1 trace.* Tools over MCP stdio", async () => {
   }
 });
 
+test("trace.start opens the current project graph without arguments", async () => {
+  const fixtureRoot = await mkdtemp(join(tmpdir(), "traceandback-mcp-start-"));
+  const repositoryPath = join(fixtureRoot, "repository");
+  const store = new SqliteTraceStore(join(fixtureRoot, "trace.db"));
+  const service = new TraceService({
+    git: new GitCli(),
+    locks: new RepositoryLockManager(),
+    store
+  });
+  let client: Awaited<ReturnType<typeof createClient>> | null = null;
+
+  try {
+    await git(fixtureRoot, "init", "--initial-branch=main", "repository");
+    await git(repositoryPath, "config", "user.name", "Trace Test");
+    await git(repositoryPath, "config", "user.email", "trace@example.test");
+    await writeFile(join(repositoryPath, "README.md"), "base\n", "utf8");
+    await git(repositoryPath, "add", "README.md");
+    await git(repositoryPath, "commit", "-m", "feat: base");
+
+    const server = createTraceMcpServer(service, {
+      browserUrl: "http://127.0.0.1:4173/trace-graph-app.html?token=test",
+      repository: repositoryPath
+    });
+    client = await createClient(server);
+    const initialized = await client.request("initialize", {
+      protocolVersion: "2025-11-25",
+      capabilities: {},
+      clientInfo: { name: "traceandback-start-test", version: "0.1.0" }
+    });
+    assert.equal(initialized.error, undefined);
+    client.notify("notifications/initialized", {});
+
+    const rendered = await client.request("tools/call", {
+      name: "trace.start",
+      arguments: {}
+    });
+    assert.equal(rendered.error, undefined);
+    const content = rendered.result?.content as readonly Readonly<{ type: string; text?: string }>[];
+    const payload = JSON.parse(content[0]?.text ?? "") as Readonly<{
+      repository: Readonly<{ path: string }>;
+      graph: Readonly<{ name: string; nodes: readonly unknown[] }>;
+      browser: Readonly<{
+        action: string;
+        target: string;
+        url: string;
+      }>;
+    }>;
+    assert.equal(payload.repository.path, repositoryPath);
+    assert.equal(payload.graph.name, "repository");
+    assert.equal(payload.graph.nodes.length, 1);
+    assert.equal(payload.browser.action, "open_in_codex");
+    assert.equal(payload.browser.target, "browser");
+    const browserUrl = new URL(payload.browser.url);
+    assert.equal(browserUrl.pathname, "/trace-graph-app.html");
+    assert.equal(browserUrl.searchParams.get("repository"), repositoryPath);
+  } finally {
+    await client?.close();
+    store.close();
+    await rm(fixtureRoot, { force: true, recursive: true });
+  }
+});
 test("opens a standalone Trace Graph from the registered repository Git history", async () => {
   const fixtureRoot = await mkdtemp(join(tmpdir(), "traceandback-mcp-graph-"));
   const repositoryPath = join(fixtureRoot, "repository");
@@ -194,10 +259,17 @@ test("opens a standalone Trace Graph from the registered repository Git history"
     const listed = await client.request("tools/list", {});
     const tools = listed.result?.tools as readonly Readonly<{
       name: string;
-      _meta?: Readonly<{ ui?: Readonly<{ resourceUri?: string }> }>;
+      _meta?: Readonly<{
+        ui?: Readonly<{ resourceUri?: string }>;
+        "openai/outputTemplate"?: string;
+      }>;
     }>[];
     const renderTool = tools.find((tool) => tool.name === "trace.render_graph");
     assert.equal(renderTool?._meta?.ui?.resourceUri, "ui://traceandback/trace-graph-v2.html");
+    assert.equal(renderTool?._meta?.["openai/outputTemplate"], "ui://traceandback/trace-graph-launcher.html");
+    const startTool = tools.find((tool) => tool.name === "trace.start");
+    assert.equal(startTool?._meta?.ui?.resourceUri, "ui://traceandback/trace-graph-v2.html");
+    assert.equal(startTool?._meta?.["openai/outputTemplate"], "ui://traceandback/trace-graph-launcher.html");
 
     const resource = await client.request("resources/read", {
       uri: "ui://traceandback/trace-graph-v2.html"
@@ -213,6 +285,18 @@ test("opens a standalone Trace Graph from the registered repository Git history"
     assert.match(ui, /repository/);
     assert.doesNotMatch(ui, /__TRACEANDBACK_BROWSER_URL__/);
     assert.doesNotMatch(ui, /node-card|ui\/notifications\/tool-result|MCP Apps host bridge/);
+
+    const legacyResource = await client.request("resources/read", {
+      uri: "ui://traceandback/trace-graph-launcher.html"
+    });
+    assert.equal(legacyResource.error, undefined);
+    const legacyResources = legacyResource.result?.contents as readonly Readonly<{
+      mimeType?: string;
+      text?: string;
+    }>[];
+    assert.equal(legacyResources[0]?.mimeType, "text/html+skybridge");
+    assert.match(legacyResources[0]?.text ?? "", /openExternal/);
+    assert.doesNotMatch(legacyResources[0]?.text ?? "", /__TRACEANDBACK_BROWSER_URL__/);
 
     const rendered = await client.request("tools/call", {
       name: "trace.render_graph",

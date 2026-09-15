@@ -139,7 +139,7 @@ async function handleRequest(
   response: ServerResponse,
   trace: TraceService,
   token: string,
-  ui: string
+  loadUi: () => Promise<string>
 ): Promise<void> {
   const requestUrl = new URL(request.url ?? "/", "http://127.0.0.1");
   if (requestUrl.searchParams.get("token") !== token) {
@@ -153,7 +153,7 @@ async function handleRequest(
       "content-type": "text/html; charset=utf-8",
       "x-content-type-options": "nosniff"
     });
-    response.end(ui);
+    response.end(await loadUi());
     return;
   }
 
@@ -196,9 +196,13 @@ export async function createTraceGraphBrowserServer(
   trace: TraceService,
   options: TraceGraphBrowserServerOptions
 ): Promise<TraceGraphBrowserServer> {
-  const ui = await readFile(TRACE_GRAPH_UI_FILE, "utf8");
+  let uiPromise: Promise<string> | undefined;
+  const loadUi = (): Promise<string> => {
+    uiPromise ??= readFile(TRACE_GRAPH_UI_FILE, "utf8");
+    return uiPromise;
+  };
   const server = createServer((request, response) => {
-    void handleRequest(request, response, trace, options.token, ui).catch((error: unknown) => {
+    void handleRequest(request, response, trace, options.token, loadUi).catch((error: unknown) => {
       if (!response.headersSent) writeJson(response, 500, failure(error));
       else response.destroy();
     });

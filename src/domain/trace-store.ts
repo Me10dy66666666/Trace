@@ -2,6 +2,7 @@ import type { OperationRecord, OperationRecovery, OperationResult, TraceNode } f
 import type { ConversationAttachment } from "./conversation.js";
 import type { TraceSession } from "./resume.js";
 import type { RegisteredRepository } from "./types.js";
+import type { WorkTraceSummaryRecord } from "./work-trace-summary.js";
 
 export type TraceNodeList = Readonly<{
   nodes: readonly TraceNode[];
@@ -33,4 +34,7 @@ export interface TraceStore {
   findConversationAttachment(sessionId: string, provider: string, conversationId: string): ConversationAttachment | null;
   createConversationAttachment(attachment: ConversationAttachment): void;
   hasConversationForNode(nodeId: string): boolean;
+  getWorkTraceSummary(nodeId: string): WorkTraceSummaryRecord | null;
+  findWorkTraceSummaryByOperationId(operationId: string): WorkTraceSummaryRecord | null;
+  saveWorkTraceSummary(summary: WorkTraceSummaryRecord): void;
 }

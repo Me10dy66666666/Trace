@@ -14,7 +14,11 @@ function defaultDatabasePath(): string {
 }
 
 function printUsage(): void {
-  process.stdout.write("Usage: traceandback serve\n");
+  process.stdout.write("Usage: traceandback start | serve\n");
+}
+
+function browserToken(): string {
+  return process.env.TRACEANDBACK_BROWSER_TOKEN ?? randomUUID();
 }
 
 function browserPort(): number {
@@ -60,7 +64,7 @@ async function serve(): Promise<void> {
   }
   const browser = await createTraceGraphBrowserServer(trace, {
     port: browserPort(),
-    token: randomUUID()
+    token: browserToken()
   });
   const handle = serveStdio(
     () => createTraceMcpServer(trace, { browserUrl: browser.url }),
@@ -92,7 +96,7 @@ async function main(): Promise<void> {
     printUsage();
     return;
   }
-  if (command !== "serve") {
+  if (command !== "serve" && command !== "start") {
     process.stderr.write(`Unsupported command: ${command}\n`);
     printUsage();
     process.exitCode = 1;

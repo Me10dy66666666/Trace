@@ -13,7 +13,7 @@ test("prints CLI help without starting an MCP transport", async () => {
     cwd: process.cwd()
   });
 
-  assert.match(result.stdout, /traceandback serve/);
+  assert.match(result.stdout, /traceandback start \| serve/);
   assert.equal(result.stderr, "");
 });
 test("creates a checkpoint for an existing host through the real stdio CLI", async () => {

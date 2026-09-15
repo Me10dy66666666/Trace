@@ -461,6 +461,62 @@ Output：
 }
 ```
 
+## 13A. WorkTrace summary finalization
+
+TraceAndBack WorkTrace Finalizer Skill 负责从 Host 当前可见的 AI 对话中生成结构化 `WorkTraceSummary`；TraceAndBack 只负责校验、脱敏和持久化。不得把原始对话重新送回模型，也不得保存隐藏推理。
+
+首选工具：
+
+```text
+trace_finalize_session
+```
+
+Input：
+
+```json
+{
+  "project_id": "repo_123",
+  "session_id": "session_77",
+  "commit_oid": "a73c11",
+  "node_id": "node_31",
+  "work_summary": {
+    "schema_version": "0.1",
+    "summary_mode": "conversation-first",
+    "user_requests": [],
+    "ai_actions": [],
+    "decisions": [],
+    "direction_changes": [],
+    "outcomes": [],
+    "unresolved": [],
+    "confidence": 0.9
+  },
+  "conversation_mode": "summary-only",
+  "operation_id": "summary-op-1"
+}
+```
+
+`commit_oid` 和 `node_id` 至少由一个定位目标；缺失时默认使用 Session 的 source node。`work_summary` 必须符合 skill 提供的 `WorkTraceSummary` schema。
+
+Output：
+
+```json
+{
+  "node_id": "node_31",
+  "session_id": "session_77",
+  "generation_status": "completed",
+  "stored": true
+}
+```
+
+兼容工具：
+
+```text
+trace_finalize_commit
+trace_update_summary
+```
+
+`trace_finalize_commit` 接受 `project_id + commit_oid`，必要时创建缺失的 commit Trace Node；`trace_update_summary` 更新已有 Node。三者都只保存结构化 summary，默认 `conversation_mode=summary-only`，并支持 `operation_id` 幂等重试。总结校验或持久化失败不得阻断 Git checkpoint/Trace Node 创建。
+
 ## 14. trace.search
 
 用途：搜索历史开发节点。
@@ -793,9 +849,18 @@ trace.compare
 trace.create_checkpoint
 trace.resume_from
 trace.attach_conversation
+trace_finalize_session
 ```
 
 不要第一版提供几十个小 Tool。
+
+直接启动便利入口：
+
+```text
+trace.start
+```
+
+该 Tool 不接收参数，直接以 MCP 进程当前工作目录作为项目范围，返回图数据并触发标准 Trace Graph 启动页。启动页通过宿主浏览器桥接自动打开内置浏览器中的完整项目可视化界面；只有宿主不支持 UI/浏览器能力时才退化为对话中的结构化结果。需要显式指定 repository、分页或历史游标时，使用 `trace.render_graph`。
 
 Tool 越少：
 

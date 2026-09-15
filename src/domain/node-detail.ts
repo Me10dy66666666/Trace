@@ -1,3 +1,5 @@
+import type { WorkTraceSummary } from "./work-trace-summary.js";
+
 export type ChangedFile = Readonly<{
   path: string;
   additions: number;
@@ -19,4 +21,5 @@ export type TraceNodeDetail = Readonly<{
   gitParent: string | null;
   chronologicalParent: string | null;
   conversationStatus: "available" | "unavailable";
+  workSummary?: WorkTraceSummary;
 }>;

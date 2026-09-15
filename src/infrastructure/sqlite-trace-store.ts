@@ -5,6 +5,7 @@ import type { ConversationAttachment } from "../domain/conversation.js";
 import type { TraceSession } from "../domain/resume.js";
 import type { TraceNodeList, TraceStore } from "../domain/trace-store.js";
 import type { RegisteredRepository } from "../domain/types.js";
+import type { WorkTraceSummaryRecord } from "../domain/work-trace-summary.js";
 
 type RepositoryRow = Readonly<{
   id: string;
@@ -56,6 +57,18 @@ type ConversationAttachmentRow = Readonly<{
   conversation_id: string;
   retention: ConversationAttachment["retention"];
   attached_at: string;
+}>;
+
+type WorkTraceSummaryRow = Readonly<{
+  node_id: string;
+  repository_id: string;
+  session_id: string | null;
+  commit_oid: string;
+  conversation_mode: WorkTraceSummaryRecord["conversationMode"];
+  operation_id: string | null;
+  summary_json: string;
+  created_at: string;
+  updated_at: string;
 }>;
 
 type NextChronologyPositionRow = Readonly<{
@@ -128,6 +141,17 @@ export class SqliteTraceStore implements TraceStore {
         retention TEXT NOT NULL CHECK(retention IN ('summary')),
         attached_at TEXT NOT NULL,
         UNIQUE(session_id, provider, conversation_id)
+      );
+      CREATE TABLE IF NOT EXISTS work_trace_summaries (
+        node_id TEXT PRIMARY KEY REFERENCES trace_nodes(id),
+        repository_id TEXT NOT NULL REFERENCES repositories(id),
+        session_id TEXT REFERENCES trace_sessions(id),
+        commit_oid TEXT NOT NULL,
+        conversation_mode TEXT NOT NULL CHECK(conversation_mode IN ('summary-only', 'summary+refs', 'full')),
+        operation_id TEXT UNIQUE,
+        summary_json TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
       );
     `);
     this.migrateOperationColumns();
@@ -386,6 +410,49 @@ export class SqliteTraceStore implements TraceStore {
       );
   }
 
+  public getWorkTraceSummary(nodeId: string): WorkTraceSummaryRecord | null {
+    const row = this.database
+      .prepare("SELECT * FROM work_trace_summaries WHERE node_id = ?")
+      .get(nodeId) as WorkTraceSummaryRow | undefined;
+    return row === undefined ? null : this.toWorkTraceSummary(row);
+  }
+
+  public findWorkTraceSummaryByOperationId(operationId: string): WorkTraceSummaryRecord | null {
+    const row = this.database
+      .prepare("SELECT * FROM work_trace_summaries WHERE operation_id = ?")
+      .get(operationId) as WorkTraceSummaryRow | undefined;
+    return row === undefined ? null : this.toWorkTraceSummary(row);
+  }
+
+  public saveWorkTraceSummary(summary: WorkTraceSummaryRecord): void {
+    this.database
+      .prepare(`
+        INSERT INTO work_trace_summaries (
+          node_id, repository_id, session_id, commit_oid, conversation_mode,
+          operation_id, summary_json, created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ON CONFLICT(node_id) DO UPDATE SET
+          repository_id = excluded.repository_id,
+          session_id = excluded.session_id,
+          commit_oid = excluded.commit_oid,
+          conversation_mode = excluded.conversation_mode,
+          operation_id = excluded.operation_id,
+          summary_json = excluded.summary_json,
+          updated_at = excluded.updated_at
+      `)
+      .run(
+        summary.nodeId,
+        summary.repositoryId,
+        summary.sessionId,
+        summary.commitOid,
+        summary.conversationMode,
+        summary.operationId,
+        JSON.stringify(summary.summary),
+        summary.createdAt,
+        summary.updatedAt
+      );
+  }
+
   public hasConversationForNode(nodeId: string): boolean {
     const row = this.database
       .prepare(`
@@ -611,6 +678,20 @@ export class SqliteTraceStore implements TraceStore {
       conversationId: row.conversation_id,
       retention: row.retention,
       attachedAt: row.attached_at
+    };
+  }
+
+  private toWorkTraceSummary(row: WorkTraceSummaryRow): WorkTraceSummaryRecord {
+    return {
+      nodeId: row.node_id,
+      repositoryId: row.repository_id,
+      sessionId: row.session_id,
+      commitOid: row.commit_oid,
+      conversationMode: row.conversation_mode,
+      operationId: row.operation_id,
+      summary: JSON.parse(row.summary_json) as WorkTraceSummaryRecord["summary"],
+      createdAt: row.created_at,
+      updatedAt: row.updated_at
     };
   }
 }

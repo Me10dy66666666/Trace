@@ -10,9 +10,10 @@
   "packageManager": "pnpm@11.19.0",
   "scripts": {
     "check": "tsc --noEmit",
-    "start": "tsx src/cli.ts",
+    "start": "node --import tsx src/cli.ts start",
     "test": "node --import tsx --test test/index.test.ts",
-    "trace": "tsx src/cli.ts",
+    "trace": "node --import tsx src/cli.ts start",
+    "trace:start": "node --import tsx src/cli.ts start",
     "prototype": "node prototype/server.mjs"
   },
   "dependencies": {

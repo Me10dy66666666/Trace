@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://traceandback.dev/schemas/trace-finalize-session.input.schema.json",
+  "title": "trace_finalize_session input",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["project_id", "session_id", "work_summary"],
+  "properties": {
+    "project_id": {"type": "string", "minLength": 1},
+    "session_id": {"type": "string", "minLength": 1},
+    "commit_oid": {"type": "string", "minLength": 4},
+    "node_id": {"type": "string", "minLength": 1},
+    "conversation_mode": {
+      "type": "string",
+      "enum": ["summary-only", "summary+refs", "full"]
+    },
+    "work_summary": {
+      "$ref": "work-trace-summary.schema.json"
+    },
+    "operation_id": {"type": "string", "minLength": 1}
+  }
+}

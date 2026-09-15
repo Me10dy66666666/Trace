@@ -1,0 +1,25 @@
+{
+  "id": "traceandback.worktrace-finalizer",
+  "name": "TraceAndBack WorkTrace Finalizer",
+  "version": "0.2.0",
+  "description": "Compact host-side skill that summarizes the live human-AI development session and persists a structured WorkTraceSummary to TraceAndBack.",
+  "entry": "SKILL.md",
+  "schemas": [
+    "schemas/work-trace-summary.schema.json",
+    "schemas/trace-finalize-session.input.schema.json"
+  ],
+  "preferred_mcp_tools": [
+    "trace_finalize_session"
+  ],
+  "compatibility_mcp_tools": [
+    "trace_finalize_commit",
+    "trace_update_summary",
+    "trace_attach_conversation"
+  ],
+  "privacy": {
+    "hidden_reasoning": "forbidden",
+    "default_conversation_storage": "summary-only",
+    "secret_redaction_required": true
+  },
+  "reference": "docs/behavior-reference.md"
+}

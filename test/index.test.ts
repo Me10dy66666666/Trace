@@ -15,6 +15,7 @@ import "./secret-checkpoint.test.js";
 import "./unsafe-git-state.test.js";
 import "./checkpoint.test.js";
 import "./trace-service.test.js";
+import "./work-trace-summary.test.js";
 import "./trace-graph-ui.test.js";
 import "./worktree-failure.test.js";
 import "./orphaned-worktree-recovery.test.js";

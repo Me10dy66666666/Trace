@@ -15,6 +15,13 @@ import {
 } from "../domain/resume.js";
 import type { TraceStore } from "../domain/trace-store.js";
 import type { RegisteredRepository, RepositoryInspection, RepositoryStatus } from "../domain/types.js";
+import {
+  parseWorkTraceSummary,
+  type FinalizeSummaryResult,
+  type SummaryConversationMode,
+  type WorkTraceSummary,
+  type WorkTraceSummaryRecord
+} from "../domain/work-trace-summary.js";
 import { FilesystemSecretScanner } from "../infrastructure/filesystem-secret-scanner.js";
 import type { RepositoryLockManager } from "../infrastructure/repository-lock-manager.js";
 
@@ -150,7 +157,8 @@ export class TraceService {
     await this.dependencies.git.verifyCommit(repository.repositoryPath, node.commit);
     const changedFiles = await this.dependencies.git.getCommitChangedFiles(repository.repositoryPath, node.commit);
 
-    return {
+    const workSummary = this.dependencies.store.getWorkTraceSummary(node.id);
+    const detail: TraceNodeDetail = {
       id: node.id,
       commit: node.commit,
       summary: node.title,
@@ -159,8 +167,13 @@ export class TraceService {
       changedFiles,
       gitParent: node.gitParentNodeId,
       chronologicalParent: node.chronologicalParentNodeId,
-      conversationStatus: this.dependencies.store.hasConversationForNode(node.id) ? "available" : "unavailable"
+      conversationStatus: this.dependencies.store.hasConversationForNode(node.id) || workSummary !== null
+        ? "available"
+        : "unavailable"
     };
+    return workSummary === null
+      ? detail
+      : { ...detail, workSummary: workSummary.summary };
   }
 
   public async createCheckpoint(
@@ -440,6 +453,228 @@ export class TraceService {
     } finally {
       await lock.release();
     }
+  }
+
+  public async finalizeSession(
+    input: Readonly<{
+      projectId: string;
+      sessionId: string;
+      commitOid?: string;
+      nodeId?: string;
+      workSummary: unknown;
+      conversationMode?: SummaryConversationMode;
+      operationId?: string;
+    }>
+  ): Promise<FinalizeSummaryResult> {
+    const summary = parseWorkTraceSummary(input.workSummary);
+    const session = this.requireSession(input.sessionId);
+    const repository = this.requireRepository(input.projectId);
+    this.assertSessionRepository(session.repositoryId, repository.id, session.id);
+    const node = await this.resolveSummaryNode(repository, {
+      nodeId: input.nodeId,
+      commitOid: input.commitOid,
+      fallbackNodeId: session.sourceNodeId,
+      allowCreate: false
+    });
+    return this.persistWorkTraceSummary({
+      node,
+      sessionId: session.id,
+      workSummary: summary,
+      conversationMode: input.conversationMode,
+      operationId: input.operationId
+    });
+  }
+
+  public async finalizeCommit(
+    input: Readonly<{
+      projectId: string;
+      commitOid: string;
+      nodeId?: string;
+      sessionId?: string;
+      workSummary: unknown;
+      conversationMode?: SummaryConversationMode;
+      operationId?: string;
+    }>
+  ): Promise<FinalizeSummaryResult> {
+    const summary = parseWorkTraceSummary(input.workSummary);
+    const repository = this.requireRepository(input.projectId);
+    const session = input.sessionId === undefined ? null : this.requireSession(input.sessionId);
+    if (session !== null) {
+      this.assertSessionRepository(session.repositoryId, repository.id, session.id);
+    }
+    const node = await this.resolveSummaryNode(repository, {
+      nodeId: input.nodeId,
+      commitOid: input.commitOid,
+      allowCreate: true
+    });
+    return this.persistWorkTraceSummary({
+      node,
+      sessionId: session?.id ?? null,
+      workSummary: summary,
+      conversationMode: input.conversationMode,
+      operationId: input.operationId
+    });
+  }
+
+  public async updateSummary(
+    input: Readonly<{
+      projectId: string;
+      nodeId: string;
+      sessionId?: string;
+      commitOid?: string;
+      workSummary: unknown;
+      conversationMode?: SummaryConversationMode;
+      operationId?: string;
+    }>
+  ): Promise<FinalizeSummaryResult> {
+    const summary = parseWorkTraceSummary(input.workSummary);
+    const repository = this.requireRepository(input.projectId);
+    const session = input.sessionId === undefined ? null : this.requireSession(input.sessionId);
+    if (session !== null) {
+      this.assertSessionRepository(session.repositoryId, repository.id, session.id);
+    }
+    const node = await this.resolveSummaryNode(repository, {
+      nodeId: input.nodeId,
+      commitOid: input.commitOid,
+      allowCreate: false
+    });
+    return this.persistWorkTraceSummary({
+      node,
+      sessionId: session?.id ?? null,
+      workSummary: summary,
+      conversationMode: input.conversationMode,
+      operationId: input.operationId
+    });
+  }
+
+  private async resolveSummaryNode(
+    repository: RegisteredRepository,
+    input: Readonly<{
+      nodeId?: string;
+      commitOid?: string;
+      fallbackNodeId?: string;
+      allowCreate: boolean;
+    }>
+  ): Promise<TraceNode> {
+    const requestedNodeId = input.nodeId ?? input.fallbackNodeId;
+    if (requestedNodeId !== undefined) {
+      const node = this.requireNode(requestedNodeId);
+      if (node.repositoryId !== repository.id) {
+        throw new TraceError(
+          "NODE_REPOSITORY_MISMATCH",
+          "The summary target node belongs to a different repository.",
+          false,
+          { nodeId: node.id, repositoryId: repository.id }
+        );
+      }
+      if (input.commitOid !== undefined && input.commitOid !== node.commit) {
+        throw new TraceError(
+          "NODE_REPOSITORY_MISMATCH",
+          "The supplied commit does not match the summary target node.",
+          false,
+          { nodeId: node.id, commitOid: input.commitOid, nodeCommit: node.commit }
+        );
+      }
+      await this.dependencies.git.verifyCommit(repository.repositoryPath, node.commit);
+      return node;
+    }
+
+    if (input.commitOid === undefined) {
+      throw new TraceError(
+        "NODE_NOT_FOUND",
+        "A Trace Node or commit is required to persist a work summary.",
+        false,
+        { repositoryId: repository.id }
+      );
+    }
+
+    await this.dependencies.git.verifyCommit(repository.repositoryPath, input.commitOid);
+    const existing = this.dependencies.store.findNodeByCommit(repository.id, input.commitOid);
+    if (existing !== null) {
+      return existing;
+    }
+    if (!input.allowCreate) {
+      throw new TraceError(
+        "NODE_NOT_FOUND",
+        "The requested commit does not have a Trace Node.",
+        false,
+        { commit: input.commitOid, repositoryId: repository.id }
+      );
+    }
+
+    await this.getGitHistory({ repositoryId: repository.id, limit: 100 });
+    const created = this.dependencies.store.findNodeByCommit(repository.id, input.commitOid);
+    if (created === null) {
+      throw new TraceError(
+        "NODE_NOT_FOUND",
+        "The requested commit is outside the available Trace history.",
+        true,
+        { commit: input.commitOid, repositoryId: repository.id }
+      );
+    }
+    return created;
+  }
+
+  private persistWorkTraceSummary(
+    input: Readonly<{
+      node: TraceNode;
+      sessionId: string | null;
+      workSummary: WorkTraceSummary;
+      conversationMode?: SummaryConversationMode;
+      operationId?: string;
+    }>
+  ): FinalizeSummaryResult {
+    if (input.operationId !== undefined) {
+      const previous = this.dependencies.store.findWorkTraceSummaryByOperationId(input.operationId);
+      if (previous !== null) {
+        if (previous.nodeId !== input.node.id) {
+          throw new TraceError(
+            "SUMMARY_OPERATION_REUSED",
+            "The summary operation id was already used for a different Trace Node.",
+            false,
+            { operationId: input.operationId, nodeId: input.node.id, previousNodeId: previous.nodeId }
+          );
+        }
+        return this.summaryResult(previous);
+      }
+    }
+
+    const existing = this.dependencies.store.getWorkTraceSummary(input.node.id);
+    const now = this.now().toISOString();
+    const record: WorkTraceSummaryRecord = {
+      nodeId: input.node.id,
+      repositoryId: input.node.repositoryId,
+      sessionId: input.sessionId ?? existing?.sessionId ?? null,
+      commitOid: input.node.commit,
+      conversationMode: input.conversationMode ?? existing?.conversationMode ?? "summary-only",
+      operationId: input.operationId ?? existing?.operationId ?? null,
+      summary: input.workSummary,
+      createdAt: existing?.createdAt ?? now,
+      updatedAt: now
+    };
+    this.dependencies.store.saveWorkTraceSummary(record);
+    return this.summaryResult(record);
+  }
+
+  private summaryResult(record: WorkTraceSummaryRecord): FinalizeSummaryResult {
+    return {
+      node_id: record.nodeId,
+      session_id: record.sessionId,
+      generation_status: "completed",
+      stored: true
+    };
+  }
+
+  private assertSessionRepository(sessionRepositoryId: string, repositoryId: string, sessionId: string): void {
+    if (sessionRepositoryId === repositoryId) {
+      return;
+    }
+    throw new TraceError(
+      "NODE_REPOSITORY_MISMATCH",
+      "The Trace Session belongs to a different repository.",
+      false,
+      { sessionId, sessionRepositoryId, repositoryId }
+    );
   }
 
   private describeComparison(filesChanged: number, additions: number, deletions: number): string {

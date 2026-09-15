@@ -1,6 +1,6 @@
 {
   "name": "traceandback",
-  "version": "0.1.0+codex.20260912082602",
+  "version": "0.1.0+codex.20260914120842",
   "description": "Project-scoped Trace Graph with safe Git recovery for AI coding work.",
   "author": {
     "name": "TraceAndBack"
@@ -16,6 +16,6 @@
       "Interactive",
       "Write"
     ],
-    "defaultPrompt": "Open the Trace Graph for this project."
+    "defaultPrompt": "trace.start"
   }
 }

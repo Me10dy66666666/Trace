@@ -1,0 +1,162 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://traceandback.dev/schemas/work-trace-summary.schema.json",
+  "title": "WorkTraceSummary",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "summary_mode",
+    "user_requests",
+    "ai_actions",
+    "decisions",
+    "direction_changes",
+    "outcomes",
+    "unresolved",
+    "confidence"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "const": "0.1"
+    },
+    "summary_mode": {
+      "type": "string",
+      "enum": ["conversation-first", "partial", "code-only"]
+    },
+    "title": {
+      "type": "string",
+      "maxLength": 160
+    },
+    "user_requests": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["request"],
+        "properties": {
+          "request": {"type": "string", "maxLength": 1000},
+          "constraints": {
+            "type": "array",
+            "items": {"type": "string", "maxLength": 500},
+            "maxItems": 20
+          },
+          "source_refs": {
+            "type": "array",
+            "items": {"type": "string", "maxLength": 200},
+            "maxItems": 20
+          }
+        }
+      },
+      "maxItems": 20
+    },
+    "ai_actions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["action"],
+        "properties": {
+          "action": {"type": "string", "maxLength": 1000},
+          "result": {"type": "string", "maxLength": 1000},
+          "tool_refs": {
+            "type": "array",
+            "items": {"type": "string", "maxLength": 200},
+            "maxItems": 30
+          },
+          "source_refs": {
+            "type": "array",
+            "items": {"type": "string", "maxLength": 200},
+            "maxItems": 20
+          }
+        }
+      },
+      "maxItems": 50
+    },
+    "decisions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["statement", "made_by", "status"],
+        "properties": {
+          "statement": {"type": "string", "maxLength": 1000},
+          "made_by": {"type": "string", "enum": ["user", "ai", "joint"]},
+          "status": {
+            "type": "string",
+            "enum": ["accepted", "rejected", "superseded", "deferred"]
+          },
+          "rationale": {"type": "string", "maxLength": 1000},
+          "source_refs": {
+            "type": "array",
+            "items": {"type": "string", "maxLength": 200},
+            "maxItems": 20
+          }
+        }
+      },
+      "maxItems": 30
+    },
+    "direction_changes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["from", "to"],
+        "properties": {
+          "from": {"type": "string", "maxLength": 1000},
+          "to": {"type": "string", "maxLength": 1000},
+          "reason": {"type": "string", "maxLength": 1000},
+          "source_refs": {
+            "type": "array",
+            "items": {"type": "string", "maxLength": 200},
+            "maxItems": 20
+          }
+        }
+      },
+      "maxItems": 20
+    },
+    "outcomes": {
+      "type": "array",
+      "items": {"type": "string", "maxLength": 1000},
+      "maxItems": 30
+    },
+    "unresolved": {
+      "type": "array",
+      "items": {"type": "string", "maxLength": 1000},
+      "maxItems": 30
+    },
+    "tests": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "status"],
+        "properties": {
+          "name": {"type": "string", "maxLength": 500},
+          "status": {"type": "string", "enum": ["passed", "failed", "partial", "not-run", "unknown"]},
+          "details": {"type": "string", "maxLength": 1000}
+        }
+      },
+      "maxItems": 30
+    },
+    "affected_areas": {
+      "type": "array",
+      "items": {"type": "string", "maxLength": 300},
+      "maxItems": 50
+    },
+    "verification_notes": {
+      "type": "array",
+      "items": {"type": "string", "maxLength": 1000},
+      "maxItems": 20
+    },
+    "source_session_ref": {
+      "type": "string",
+      "maxLength": 300
+    },
+    "confidence": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    }
+  }
+}
