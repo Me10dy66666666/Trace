@@ -51,6 +51,7 @@ export type GitCommitSummary = Readonly<{
 export interface GitAdapter {
   inspectRepository(repositoryPath: string): Promise<RepositoryInspection>;
   listCommits(repositoryPath: string, limit: number): Promise<readonly GitCommitSummary[]>;
+  getPublishedCommit(repositoryPath: string): Promise<string | null>;
   listVisibleChanges(repositoryPath: string): Promise<readonly string[]>;
   createCheckpoint(input: CreateGitCheckpointInput): Promise<string>;
   findCheckpointByOperationId(repositoryPath: string, operationId: string): Promise<LocatedGitCheckpoint | null>;

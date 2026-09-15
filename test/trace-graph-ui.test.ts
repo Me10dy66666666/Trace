@@ -114,13 +114,19 @@ const graphPayload = {
       changes: "test update"
     }],
     gitEdges: [],
-    chronologyEdges: []
+    chronologyEdges: [],
+    publishedCommit: "1234567890abcdef"
   },
   repository: { id: "repo-test", path: "D:\\TraceAndBack" },
   status: { branch: "main", dirty: false }
 };
 
-async function loadUi(): Promise<{ root: FakeRoot; window: Record<string, unknown>; html: string }> {
+async function loadUi(): Promise<{
+  root: FakeRoot;
+  window: Record<string, unknown>;
+  context: Record<string, unknown>;
+  html: string;
+}> {
   const html = await readFile(new URL("../src/mcp/trace-graph-app.html", import.meta.url), "utf8");
   const script = html.slice(html.indexOf("<script>") + "<script>".length, html.lastIndexOf("</script>"));
   const root = new FakeRoot();
@@ -144,7 +150,7 @@ async function loadUi(): Promise<{ root: FakeRoot; window: Record<string, unknow
       return root.querySelector(selector);
     }
   };
-  runInNewContext(script, {
+  const context: Record<string, unknown> = {
     window,
     document,
     Element: FakeElement,
@@ -158,9 +164,10 @@ async function loadUi(): Promise<{ root: FakeRoot; window: Record<string, unknow
     URL,
     URLSearchParams,
     fetch: window.fetch
-  });
+  };
+  runInNewContext(script, context);
   await new Promise((resolve) => setTimeout(resolve, 0));
-  return { root, window, html };
+  return { root, window, context, html };
 }
 
 test("loads the Trace Graph from the top-level browser data service", async () => {
@@ -204,6 +211,40 @@ test("keeps only the zoom controls in the graph overlay", async () => {
 
   assert.match(html, /canvas-zoom-tools/, "the overlay should be dedicated to zoom controls");
   assert.doesNotMatch(html, /graph-toolbar|项目版本画布|时间关系|实现关系|relationshipMode/);
+});
+
+test("distinguishes remote-published cards from selected cards", async () => {
+  const { html } = await loadUi();
+
+  assert.match(html, /publishedCommit/, "the UI should receive the current remote publication state");
+  assert.doesNotMatch(html, /publishedCommits/, "the UI should mark only one remote version");
+  assert.match(html, /published-badge/, "published versions should have a visible marker");
+  assert.match(html, /node-card\.published/, "published cards need a distinct visual state");
+  assert.match(html, /node-card\.selected\.published/, "selection should override the published highlight");
+  assert.match(
+    html,
+    /\.node-card\.selected \.published-badge \{[\s\S]*color: var\(--green\)/,
+    "the published label should keep its original color when selected"
+  );
+});
+
+test("does not report the published marker as a repository update on every poll", async () => {
+  const { context } = await loadUi();
+  const repositoryRevision = context.repositoryRevision as (
+    status: Record<string, unknown>,
+    publishedCommit?: string | null
+  ) => string | null;
+  const graphStatusRevision = repositoryRevision(graphPayload.status, graphPayload.graph.publishedCommit);
+  const polledStatusRevision = repositoryRevision({
+    ...graphPayload.status,
+    publishedCommit: graphPayload.graph.publishedCommit
+  });
+
+  assert.equal(
+    graphStatusRevision,
+    polledStatusRevision,
+    "the initial graph and status poll must produce the same revision when the repository did not change"
+  );
 });
 
 test("keeps manual refresh and enables repository status polling", async () => {

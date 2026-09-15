@@ -404,6 +404,71 @@ test("refreshes the top-level Trace Graph through the local browser API", async 
   }
 });
 
+test("marks the current branch's GitHub HEAD as the published version", async () => {
+  const fixtureRoot = await mkdtemp(join(tmpdir(), "traceandback-browser-remote-"));
+  const repositoryPath = join(fixtureRoot, "repository");
+  const remotePath = join(fixtureRoot, "remote.git");
+  const store = new SqliteTraceStore(join(fixtureRoot, "trace.db"));
+  const service = new TraceService({
+    git: new GitCli(),
+    locks: new RepositoryLockManager(),
+    store
+  });
+  const browser = await createTraceGraphBrowserServer(service, { port: 0, token: "test-token" });
+
+  try {
+    await git(fixtureRoot, "init", "--initial-branch=main", "repository");
+    await git(fixtureRoot, "init", "--bare", "remote.git");
+    await git(repositoryPath, "config", "user.name", "Trace Test");
+    await git(repositoryPath, "config", "user.email", "trace@example.test");
+    await git(repositoryPath, "remote", "add", "origin", remotePath);
+    await writeFile(join(repositoryPath, "README.md"), "base\n", "utf8");
+    await git(repositoryPath, "add", "README.md");
+    await git(repositoryPath, "commit", "-m", "feat: base");
+    const firstCommit = await git(repositoryPath, "rev-parse", "HEAD");
+    await git(repositoryPath, "push", "-u", "origin", "main");
+    await git(remotePath, "symbolic-ref", "HEAD", "refs/heads/main");
+
+    const pageUrl = new URL(browser.url);
+    pageUrl.searchParams.set("repository", repositoryPath);
+    const call = async () => {
+      const url = new URL("/api/tool", pageUrl);
+      url.searchParams.set("token", "test-token");
+      return await fetch(url, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          name: "trace.render_graph",
+          arguments: { repository: repositoryPath, limit: 50, cursor: null }
+        })
+      });
+    };
+    const firstPayload = await (await call()).json() as Readonly<{
+      structuredContent: Readonly<{ graph: Readonly<{ publishedCommit: string | null }> }>;
+    }>;
+    assert.equal(firstPayload.structuredContent.graph.publishedCommit, firstCommit);
+
+    await writeFile(join(repositoryPath, "README.md"), "base\nlocal\n", "utf8");
+    await git(repositoryPath, "add", "README.md");
+    await git(repositoryPath, "commit", "-m", "feat: local");
+    const localCommit = await git(repositoryPath, "rev-parse", "HEAD");
+    const localPayload = await (await call()).json() as Readonly<{
+      structuredContent: Readonly<{ graph: Readonly<{ publishedCommit: string | null }> }>;
+    }>;
+    assert.equal(localPayload.structuredContent.graph.publishedCommit, firstCommit);
+
+    await git(repositoryPath, "push", "origin", "main");
+    const publishedPayload = await (await call()).json() as Readonly<{
+      structuredContent: Readonly<{ graph: Readonly<{ publishedCommit: string | null }> }>;
+    }>;
+    assert.equal(publishedPayload.structuredContent.graph.publishedCommit, localCommit);
+  } finally {
+    await browser.close();
+    store.close();
+    await rm(fixtureRoot, { force: true, recursive: true });
+  }
+});
+
 test("renders parallel branch nodes in one project Trace Graph", async () => {
   const fixtureRoot = await mkdtemp(join(tmpdir(), "traceandback-mcp-branches-"));
   const repositoryPath = join(fixtureRoot, "repository");

@@ -121,7 +121,7 @@ export async function buildTraceGraph(
   }
   const selectedRepositoryPath = input.repository ?? registered?.repositoryPath;
 
-  const [status, history] = await Promise.all([
+  const [status, history, publishedCommit] = await Promise.all([
     trace.getStatus({
       repositoryId: selectedRepositoryId,
       repositoryPath: selectedRepositoryPath
@@ -129,6 +129,10 @@ export async function buildTraceGraph(
     trace.getGitHistory({
       repositoryId: selectedRepositoryId,
       limit: input.limit,
+      repositoryPath: selectedRepositoryPath
+    }),
+    trace.getPublishedCommit({
+      repositoryId: selectedRepositoryId,
       repositoryPath: selectedRepositoryPath
     })
   ]);
@@ -195,6 +199,7 @@ export async function buildTraceGraph(
       status: status.dirty ? "working tree dirty" : "working tree clean",
       nodes,
       gitEdges,
+      publishedCommit,
       chronologyEdges,
       nextCursor: history.nextCursor
     }

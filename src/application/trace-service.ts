@@ -102,6 +102,13 @@ export class TraceService {
     };
   }
 
+  public async getPublishedCommit(
+    input: Readonly<{ repositoryId: string; repositoryPath?: string }>
+  ): Promise<string | null> {
+    const repository = this.requireRepository(input.repositoryId);
+    return await this.dependencies.git.getPublishedCommit(input.repositoryPath ?? repository.repositoryPath);
+  }
+
   public getHistory(input: Readonly<{ repositoryId: string; limit: number; cursor: string | null }>): TraceHistoryPage {
     this.requireRepository(input.repositoryId);
     const limit = Math.min(Math.max(input.limit, 1), 100);

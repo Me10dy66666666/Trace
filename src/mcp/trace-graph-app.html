@@ -199,6 +199,34 @@ code, .mono { font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation M
   box-shadow: 0 16px 34px rgba(0, 0, 0, .34), 0 0 0 1px rgba(212, 135, 97, .12);
 }
 .node-card.selected { background: linear-gradient(150deg, #34251e, #241b17 72%); }
+.node-card.published {
+  border-color: rgba(156, 199, 162, .78);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, .28), 0 0 0 1px rgba(156, 199, 162, .12);
+}
+.node-card.published:hover,
+.node-card.published.selected {
+  border-color: var(--cyan);
+}
+.node-card.selected.published {
+  background: linear-gradient(150deg, #34251e, #241b17 72%);
+  box-shadow: 0 16px 34px rgba(0, 0, 0, .34), 0 0 0 2px rgba(212, 135, 97, .22);
+}
+.published-badge {
+  margin-left: auto;
+  padding: 2px 5px;
+  border: 1px solid rgba(156, 199, 162, .38);
+  border-radius: 5px;
+  color: var(--green);
+  background: var(--green-soft);
+  font-size: 8px;
+  line-height: 1.1;
+  white-space: nowrap;
+}
+.node-card.selected .published-badge {
+  border-color: rgba(156, 199, 162, .38);
+  color: var(--green);
+  background: var(--green-soft);
+}
 .node-card-head { display: flex; align-items: center; gap: 6px; min-width: 0; }
 .node-card-label { color: var(--cyan); font-size: 8px; font-weight: 800; letter-spacing: .09em; text-transform: uppercase; }
 .node-icon { display: grid; flex: 0 0 auto; place-items: center; width: 20px; height: 20px; border-radius: 6px; color: var(--cyan); background: var(--cyan-soft); font-size: 11px; }
@@ -398,6 +426,7 @@ const state = {
   payload: null,
   selectedId: null,
   connected: false,
+  publishedCommit: null,
   zoom: 1,
   pan: { x: 0, y: 0 },
   autoRefreshTimer: null,
@@ -557,7 +586,8 @@ function applyGraphResult(result) {
     ? previousSelection
     : payload.graph.nodes[0]?.id ?? null;
   state.connected = true;
-  state.repositoryRevision = repositoryRevision(payload.status);
+  state.publishedCommit = typeof payload.graph.publishedCommit === "string" ? payload.graph.publishedCommit : null;
+  state.repositoryRevision = repositoryRevision(payload.status, payload.graph.publishedCommit);
   state.positions = layoutGraph(payload.graph);
   state.comparison = null;
   state.centerViewportOnNextRender = isInitialGraph;
@@ -683,9 +713,11 @@ function graphEdges(data) {
 
 function card(node, index) {
   const position = state.positions.get(node.id) ?? { left: CANVAS_PADDING + index * (NODE_WIDTH + HORIZONTAL_GAP), top: CANVAS_PADDING };
+  const published = node.commit === state.publishedCommit;
   const active = node.id === state.selectedId ? " selected" : "";
+  const publishedClass = published ? " published" : "";
   const update = node.changes || node.goal || node.title || "未记录更新说明";
-  return '<article class="node-card' + active + '" data-node="' + esc(node.id) + '" style="left:' + position.left + 'px;top:' + position.top + 'px" aria-label="' + esc(node.title) + ' Trace Card"><div class="node-card-head"><span class="node-icon">◆</span><span class="node-card-label">更新说明</span></div><div class="node-time"><span>提交时间</span>' + esc(formatDate(node.createdAt)) + '</div><div class="node-update"><strong title="' + esc(node.title) + '">' + esc(node.title || "未命名版本") + '</strong><p title="' + esc(update) + '">' + esc(update) + '</p></div><div class="node-commit"><span class="field-label">仓库提交编号</span><code title="' + esc(node.commit) + '">' + esc(shortSha(node.commit)) + '</code></div></article>';
+  return '<article class="node-card' + publishedClass + active + '" data-node="' + esc(node.id) + '" style="left:' + position.left + 'px;top:' + position.top + 'px" aria-label="' + esc(node.title) + ' Trace Card"><div class="node-card-head"><span class="node-icon">◆</span><span class="node-card-label">更新说明</span>' + (published ? '<span class="published-badge" title="已发布到远端仓库">已发布</span>' : '') + '</div><div class="node-time"><span>提交时间</span>' + esc(formatDate(node.createdAt)) + '</div><div class="node-update"><strong title="' + esc(node.title) + '">' + esc(node.title || "未命名版本") + '</strong><p title="' + esc(update) + '">' + esc(update) + '</p></div><div class="node-commit"><span class="field-label">仓库提交编号</span><code title="' + esc(node.commit) + '">' + esc(shortSha(node.commit)) + '</code></div></article>';
 }
 
 function relationButton(id, label) {
@@ -747,14 +779,15 @@ function updateCanvasTransform() {
   world.style.transform = "translate(" + state.pan.x + "px, " + state.pan.y + "px) scale(" + state.zoom + ")";
 }
 
-function repositoryRevision(status) {
+function repositoryRevision(status, publishedCommit = null) {
   if (!status || typeof status !== "object") return null;
   return [
     status.head ?? "—",
     status.branch ?? "—",
     status.dirty ? "dirty" : "clean",
     status.untrackedCount ?? 0,
-    status.operationState ?? "none"
+    status.operationState ?? "none",
+    status.publishedCommit ?? publishedCommit ?? ""
   ].join("|");
 }
 
