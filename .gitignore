@@ -5,3 +5,18 @@ coverage/
 *.sqlite
 *.sqlite-shm
 *.sqlite-wal
+
+
+# Local explanatory and planning documents
+/开发文档/
+/PRD/
+/SOP/
+/MCP-SPEC/
+/docs/
+/CONTEXT.md
+*.docx
+
+# Keep the public project guide and the packaged host Skill tracked.
+!/README.md
+!/skills/
+!/skills/**
