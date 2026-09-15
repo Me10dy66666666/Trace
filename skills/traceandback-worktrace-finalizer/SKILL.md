@@ -1,3 +1,8 @@
+---
+name: traceandback-worktrace-finalizer
+description: Summarize the current visible human-AI development session when a Trace checkpoint or commit is being saved or the host is leaving the development context, then persist a structured WorkTraceSummary to TraceAndBack.
+---
+
 # TraceAndBack WorkTrace Finalizer
 
 Version: 0.2.0
@@ -38,6 +43,18 @@ Use, in order:
 Never infer or request hidden chain-of-thought.
 
 ## Procedure
+
+## Two-phase checkpoint route
+
+When the user asks to save, push, or checkpoint local changes, use this host-side sequence:
+
+1. Call `trace.create_checkpoint` with the current repository identifier and the user-approved reason when a new local commit is needed.
+2. Capture the returned `nodeId` and `commit`.
+3. Build the WorkTraceSummary from the current visible conversation, then call `trace_finalize_commit` with `project_id`, `commit_oid`, and `node_id`.
+4. Confirm the finalizer returns `stored: true`; only then report that the collaboration summary was saved.
+
+`trace.start` only opens the Trace Graph. `trace.create_checkpoint` only writes Git history. Neither tool invokes this Skill or generates an AI summary.
+
 
 1. Identify the active Trace session and relevant visible conversation window.
 2. Use the host's current live conversation context directly when available.

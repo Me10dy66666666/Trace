@@ -1,6 +1,6 @@
 {
   "name": "traceandback",
-  "version": "0.1.0+codex.20260914120842",
+  "version": "0.1.0+codex.20260915025951",
   "description": "Project-scoped Trace Graph with safe Git recovery for AI coding work.",
   "author": {
     "name": "TraceAndBack"
