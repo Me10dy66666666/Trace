@@ -49,7 +49,7 @@ export class GitCli implements GitAdapter {
     ]);
     const status = this.parseStatus(statusOutput.stdout);
     const fingerprint = createHash("sha256")
-      .update(`${canonicalPath}\u0000${commonDirectory}`)
+      .update(commonDirectory)
       .digest("hex");
 
     return {

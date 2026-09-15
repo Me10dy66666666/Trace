@@ -65,3 +65,34 @@ test("registers a repository and reports clean then dirty workspace state", asyn
     store.close();
   }
 });
+
+test("shares repository identity across linked worktrees", async () => {
+  const root = await mkdtemp(join(tmpdir(), "traceandback-repository-identity-"));
+  const mainPath = join(root, "repository");
+  const linkedPath = join(root, "linked-worktree");
+  const store = new SqliteTraceStore(join(root, "trace.db"));
+  const service = new TraceService({
+    git: new GitCli(),
+    locks: new RepositoryLockManager(),
+    store
+  });
+
+  try {
+    await git(root, "init", "--initial-branch=main", "repository");
+    await git(mainPath, "config", "user.name", "Trace Test");
+    await git(mainPath, "config", "user.email", "trace@example.test");
+    await writeFile(join(mainPath, "README.md"), "base\n", "utf8");
+    await git(mainPath, "add", "README.md");
+    await git(mainPath, "commit", "-m", "feat: base");
+    await git(mainPath, "worktree", "add", "-b", "session-a", linkedPath, "HEAD");
+
+    const mainRepository = await service.registerRepository({ repositoryPath: mainPath });
+    const linkedRepository = await service.registerRepository({ repositoryPath: linkedPath });
+
+    assert.equal(linkedRepository.id, mainRepository.id);
+    assert.equal(linkedRepository.commonDirectory, mainRepository.commonDirectory);
+  } finally {
+    store.close();
+    await rm(root, { force: true, recursive: true });
+  }
+});

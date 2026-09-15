@@ -101,7 +101,8 @@ async function callBrowserTool(
         operationId: optionalString(args, "operationId") ?? ("browser_" + randomUUID()),
         nodeId: requiredString(args, "nodeId"),
         checkpointCurrent: args.checkpointCurrent === true,
-        strategy: "branch"
+        strategy: "branch",
+        repositoryPath: optionalString(args, "repository")
       });
     default:
       throw new Error("Browser API operation is not available: " + name);

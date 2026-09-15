@@ -58,10 +58,11 @@ export class TraceService {
 
   public async registerRepository(input: Readonly<{ repositoryPath: string }>): Promise<RegisteredRepository> {
     const inspection = await this.dependencies.git.inspectRepository(input.repositoryPath);
-    const existing = this.dependencies.store.findRepositoryByPath(inspection.repositoryPath);
+    const existing = this.dependencies.store.findRepositoryByCommonDirectory(inspection.commonDirectory)
+      ?? this.dependencies.store.findRepositoryByPath(inspection.repositoryPath);
 
     if (existing !== null) {
-      if (existing.fingerprint !== inspection.fingerprint) {
+      if (existing.commonDirectory !== inspection.commonDirectory) {
         throw new TraceError(
           "REPO_IDENTITY_CHANGED",
           "The repository at this path no longer matches its registered identity.",
@@ -84,9 +85,11 @@ export class TraceService {
     return repository;
   }
 
-  public async getStatus(input: Readonly<{ repositoryId: string }>): Promise<RepositoryStatus> {
+  public async getStatus(
+    input: Readonly<{ repositoryId: string; repositoryPath?: string }>
+  ): Promise<RepositoryStatus> {
     const repository = this.requireRepository(input.repositoryId);
-    const inspection = await this.inspectRegisteredRepository(repository);
+    const inspection = await this.inspectRegisteredRepository(repository, input.repositoryPath);
 
     return {
       repositoryId: repository.id,
@@ -177,7 +180,7 @@ export class TraceService {
   }
 
   public async createCheckpoint(
-    input: Readonly<{ operationId: string; reason: string; repositoryId: string }>
+    input: Readonly<{ operationId: string; reason: string; repositoryId: string; repositoryPath?: string }>
   ): Promise<CheckpointResult> {
     const previous = this.dependencies.store.getOperation(input.operationId);
     if (previous !== null) {
@@ -185,6 +188,7 @@ export class TraceService {
     }
 
     const repository = this.requireRepository(input.repositoryId);
+    const repositoryPath = input.repositoryPath ?? repository.repositoryPath;
     const lock = await this.dependencies.locks.acquire(repository);
     let operationCreated = false;
 
@@ -194,7 +198,7 @@ export class TraceService {
         return this.resolveRepeatedCheckpoint(afterLock);
       }
 
-      const inspection = await this.inspectRegisteredRepository(repository);
+      const inspection = await this.inspectRegisteredRepository(repository, repositoryPath);
       this.assertSafeMutationState(inspection);
       const operation: OperationRecord = {
         id: input.operationId,
@@ -223,8 +227,8 @@ export class TraceService {
       }
 
       const findings = await this.secretScanner.scan(
-        repository.repositoryPath,
-        await this.dependencies.git.listVisibleChanges(repository.repositoryPath)
+        repositoryPath,
+        await this.dependencies.git.listVisibleChanges(repositoryPath)
       );
       if (findings.length > 0) {
         throw new TraceError(
@@ -238,10 +242,10 @@ export class TraceService {
       const commit = await this.dependencies.git.createCheckpoint({
         operationId: input.operationId,
         reason: input.reason,
-        repositoryPath: repository.repositoryPath
+        repositoryPath
       });
       this.dependencies.store.markOperationGitApplied(input.operationId);
-      await this.dependencies.git.verifyCommit(repository.repositoryPath, commit);
+      await this.dependencies.git.verifyCommit(repositoryPath, commit);
 
       const node = this.createCheckpointNode(
         repository,
@@ -276,6 +280,7 @@ export class TraceService {
       nodeId: string;
       checkpointCurrent: boolean;
       strategy?: ResumeStrategy;
+      repositoryPath?: string;
     }>
   ): Promise<ContinueResult> {
     const previous = this.dependencies.store.getOperation(input.operationId);
@@ -286,6 +291,7 @@ export class TraceService {
     const strategy = input.strategy ?? "branch";
     const target = this.requireNode(input.nodeId);
     const repository = this.requireRepository(target.repositoryId);
+    const repositoryPath = input.repositoryPath ?? repository.repositoryPath;
     const lock = await this.dependencies.locks.acquire(repository);
     let operationCreated = false;
 
@@ -295,7 +301,7 @@ export class TraceService {
         return this.resolveRepeatedResume(afterLock);
       }
 
-      const inspection = await this.inspectRegisteredRepository(repository);
+      const inspection = await this.inspectRegisteredRepository(repository, repositoryPath);
       this.assertSafeMutationState(inspection);
       if (strategy === "branch" && inspection.dirty) {
         throw new TraceError(
@@ -305,14 +311,14 @@ export class TraceService {
           {
             action: "commit_or_stash",
             branch: inspection.branch,
-            repositoryPath: repository.repositoryPath,
+            repositoryPath,
             untrackedCount: inspection.untrackedCount
           }
         );
       }
       const branchName = this.createResumeBranchName(target.id, input.operationId);
       const worktreeName = this.createWorktreeName(target.id, input.operationId);
-      await this.dependencies.git.verifyCommit(repository.repositoryPath, target.commit);
+      await this.dependencies.git.verifyCommit(repositoryPath, target.commit);
       const operation: OperationRecord = {
         id: input.operationId,
         repositoryId: repository.id,
@@ -335,17 +341,17 @@ export class TraceService {
       this.dependencies.store.markOperationPrepared(input.operationId);
 
       const checkpointNode = strategy === "worktree" && input.checkpointCurrent && inspection.dirty
-        ? await this.createCheckpointForResume(repository, input.operationId, target.id, inspection.head)
+        ? await this.createCheckpointForResume(repository, repositoryPath, input.operationId, target.id, inspection.head)
         : null;
 
       const environment = strategy === "branch"
         ? await this.dependencies.git.createBranchAndCheckout({
-            repositoryPath: repository.repositoryPath,
+            repositoryPath,
             targetCommit: target.commit,
             branchName
           })
         : await this.dependencies.git.createWorktree({
-            repositoryPath: repository.repositoryPath,
+            repositoryPath,
             targetCommit: target.commit,
             branchName,
             worktreeName
@@ -787,11 +793,12 @@ export class TraceService {
   }
 
   public async getGitHistory(
-    input: Readonly<{ repositoryId: string; limit: number }>
+    input: Readonly<{ repositoryId: string; limit: number; repositoryPath?: string }>
   ): Promise<TraceHistoryPage> {
     const repository = this.requireRepository(input.repositoryId);
     const limit = Math.min(Math.max(input.limit, 1), 100);
-    const commits = await this.dependencies.git.listCommits(repository.repositoryPath, limit);
+    const repositoryPath = input.repositoryPath ?? repository.repositoryPath;
+    const commits = await this.dependencies.git.listCommits(repositoryPath, limit);
     const existingByCommit = new Map<string, TraceNode | null>();
     const nodeIdByCommit = new Map<string, string>();
 
@@ -826,32 +833,19 @@ export class TraceService {
       });
     }
 
-    return {
-      nodes: commits.map((commit, index) => ({
-        id: nodeIdByCommit.get(commit.commit) ?? commit.commit,
-        commit: commit.commit,
-        title: commit.title,
-        createdAt: commit.createdAt,
-        gitParent: commit.parentCommit === null
-          ? null
-          : nodeIdByCommit.get(commit.parentCommit) ?? null,
-        chronologicalParent: commits[index + 1] === undefined
-          ? null
-          : nodeIdByCommit.get(commits[index + 1]?.commit ?? "") ?? null
-      })),
-      nextCursor: null
-    };
+    return this.getHistory({ repositoryId: repository.id, limit, cursor: null });
   }
 
   private async createCheckpointForResume(
     repository: RegisteredRepository,
+    repositoryPath: string,
     operationId: string,
     sourceNodeId: string,
     gitParentCommit: string | null
   ): Promise<TraceNode> {
     const findings = await this.secretScanner.scan(
-      repository.repositoryPath,
-      await this.dependencies.git.listVisibleChanges(repository.repositoryPath)
+      repositoryPath,
+      await this.dependencies.git.listVisibleChanges(repositoryPath)
     );
     if (findings.length > 0) {
       throw new TraceError(
@@ -865,10 +859,10 @@ export class TraceService {
     const commit = await this.dependencies.git.createCheckpoint({
       operationId,
       reason: `before_resume_from_${sourceNodeId}`,
-      repositoryPath: repository.repositoryPath
+      repositoryPath
     });
     this.dependencies.store.markOperationGitApplied(operationId);
-    await this.dependencies.git.verifyCommit(repository.repositoryPath, commit);
+    await this.dependencies.git.verifyCommit(repositoryPath, commit);
 
     return this.createCheckpointNode(
       repository,
@@ -931,14 +925,17 @@ export class TraceService {
     return node;
   }
 
-  private async inspectRegisteredRepository(repository: RegisteredRepository): Promise<RepositoryInspection> {
-    const inspection = await this.dependencies.git.inspectRepository(repository.repositoryPath);
-    if (inspection.fingerprint !== repository.fingerprint) {
+  private async inspectRegisteredRepository(
+    repository: RegisteredRepository,
+    repositoryPath = repository.repositoryPath
+  ): Promise<RepositoryInspection> {
+    const inspection = await this.dependencies.git.inspectRepository(repositoryPath);
+    if (inspection.commonDirectory !== repository.commonDirectory) {
       throw new TraceError(
         "REPO_IDENTITY_CHANGED",
-        "The registered repository fingerprint has changed.",
+        "The repository path does not belong to the registered repository.",
         false,
-        { repositoryId: repository.id, repositoryPath: repository.repositoryPath }
+        { repositoryId: repository.id, repositoryPath }
       );
     }
     return inspection;

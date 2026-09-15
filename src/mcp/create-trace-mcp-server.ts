@@ -119,12 +119,17 @@ export async function buildTraceGraph(
       true
     );
   }
+  const selectedRepositoryPath = input.repository ?? registered?.repositoryPath;
 
   const [status, history] = await Promise.all([
-    trace.getStatus({ repositoryId: selectedRepositoryId }),
+    trace.getStatus({
+      repositoryId: selectedRepositoryId,
+      repositoryPath: selectedRepositoryPath
+    }),
     trace.getGitHistory({
       repositoryId: selectedRepositoryId,
-      limit: input.limit
+      limit: input.limit,
+      repositoryPath: selectedRepositoryPath
     })
   ]);
   const historyById = new Map(history.nodes.map((node) => [node.id, node]));
@@ -274,7 +279,10 @@ export function createTraceMcpServer(trace: TraceService, options: TraceMcpServe
     },
     async ({ repository }) => execute(async () => {
       const registered = await trace.registerRepository({ repositoryPath: repository });
-      return await trace.getStatus({ repositoryId: registered.id });
+      return await trace.getStatus({
+        repositoryId: registered.id,
+        repositoryPath: repository
+      });
     })
   );
 
@@ -385,7 +393,8 @@ export function createTraceMcpServer(trace: TraceService, options: TraceMcpServe
     async ({ repositoryId, reason, operationId: requestedOperationId }) => execute(() => trace.createCheckpoint({
       operationId: operationId(requestedOperationId),
       reason,
-      repositoryId
+      repositoryId,
+      repositoryPath: options.repository
     }))
   );
 
@@ -406,7 +415,8 @@ export function createTraceMcpServer(trace: TraceService, options: TraceMcpServe
       operationId: operationId(requestedOperationId),
       nodeId,
       checkpointCurrent,
-      strategy
+      strategy,
+      repositoryPath: options.repository
     }))
   );
 

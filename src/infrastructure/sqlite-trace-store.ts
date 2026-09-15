@@ -95,6 +95,8 @@ export class SqliteTraceStore implements TraceStore {
         default_branch TEXT,
         created_at TEXT NOT NULL
       );
+      CREATE INDEX IF NOT EXISTS repositories_common_directory_idx
+        ON repositories(common_directory);
       CREATE TABLE IF NOT EXISTS trace_nodes (
         id TEXT PRIMARY KEY,
         repository_id TEXT NOT NULL REFERENCES repositories(id),
@@ -164,6 +166,13 @@ export class SqliteTraceStore implements TraceStore {
     const row = this.database
       .prepare("SELECT * FROM repositories WHERE repository_path = ?")
       .get(repositoryPath) as RepositoryRow | undefined;
+    return row === undefined ? null : this.toRepository(row);
+  }
+
+  public findRepositoryByCommonDirectory(commonDirectory: string): RegisteredRepository | null {
+    const row = this.database
+      .prepare("SELECT * FROM repositories WHERE common_directory = ? ORDER BY created_at ASC LIMIT 1")
+      .get(commonDirectory) as RepositoryRow | undefined;
     return row === undefined ? null : this.toRepository(row);
   }
 
