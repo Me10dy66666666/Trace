@@ -265,26 +265,29 @@ code, .mono { font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation M
 .detail-header { display: flex; align-items: flex-start; gap: 10px; padding: 16px 16px 13px; border-bottom: 1px solid var(--line-soft); }
 .detail-heading { min-width: 0; }
 .detail-heading .eyebrow { color: var(--cyan); font-size: 9px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
-.detail-heading h2 { margin: 5px 0 2px; overflow: hidden; font-size: 16px; text-overflow: ellipsis; white-space: nowrap; }
-.detail-heading p { margin: 0; color: var(--muted); font-size: 10px; }
+.detail-heading h2 { margin: 5px 0 2px; overflow: hidden; font-size: 17px; text-overflow: ellipsis; white-space: nowrap; }
+.detail-heading p { margin: 0; color: var(--muted); font-size: 11px; }
 .close-detail { display: grid; flex: 0 0 auto; place-items: center; width: 26px; height: 26px; margin-left: auto; border-radius: 7px; color: var(--muted); background: transparent; cursor: pointer; }
 .close-detail:hover { color: var(--text); background: var(--panel-soft); }
 .detail-tabs { display: flex; gap: 4px; padding: 10px 12px 0; }
-.detail-tab { padding: 6px 8px; border-bottom: 2px solid transparent; border-radius: 6px 6px 0 0; color: var(--muted); background: transparent; cursor: pointer; font-size: 10px; }
+.detail-tab { padding: 6px 8px; border-bottom: 2px solid transparent; border-radius: 6px 6px 0 0; color: var(--muted); background: transparent; cursor: pointer; font-size: 11px; }
 .detail-tab:hover { color: var(--text); background: rgba(255, 255, 255, .035); }
 .detail-tab.active { border-bottom-color: var(--cyan); color: var(--text); }
 .detail-scroll { max-height: calc(100vh - 210px); overflow: auto; padding: 12px 16px 16px; }
 .detail-section { margin-top: 14px; }
 .detail-section:first-child { margin-top: 0; }
-.detail-section h3 { margin: 0 0 6px; color: var(--dim); font-size: 9px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }
-.detail-section p { margin: 0; color: var(--muted); font-size: 11px; white-space: pre-wrap; }
+.detail-section h3 { margin: 0 0 6px; color: var(--muted); font-size: 10px; font-weight: 800; letter-spacing: .07em; text-transform: uppercase; }
+.detail-section p { margin: 0; color: var(--muted); font-size: 12px; line-height: 1.55; white-space: pre-wrap; }
+.detail-section-primary h3 { color: var(--cyan); }
+.detail-section-primary p { color: var(--text); font-size: 13px; line-height: 1.5; }
+.detail-hint { margin-top: 5px !important; color: var(--dim) !important; font-size: 10px !important; line-height: 1.4 !important; }
 .detail-section p.warning { color: var(--amber); }
 .detail-commit-pair { display: grid; grid-template-columns: 1fr auto 1fr; gap: 8px; align-items: end; padding: 9px; border: 1px solid var(--line-soft); border-radius: 9px; background: rgba(255, 255, 255, .025); }
 .detail-commit-pair > div { min-width: 0; }
-.detail-commit-pair code { display: block; overflow: hidden; color: var(--cyan); font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
-.detail-commit-pair > span { padding-bottom: 1px; color: var(--dim); font-size: 10px; }
+.detail-commit-pair code { display: block; overflow: hidden; color: var(--cyan); font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
+.detail-commit-pair > span { padding-bottom: 1px; color: var(--dim); font-size: 9px; }
 .file-list { display: grid; gap: 5px; margin: 0; padding: 0; list-style: none; }
-.file-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: center; padding: 7px 8px; border: 1px solid var(--line-soft); border-radius: 7px; background: rgba(255, 255, 255, .025); font-size: 10px; }
+.file-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: center; padding: 7px 8px; border: 1px solid var(--line-soft); border-radius: 7px; background: rgba(255, 255, 255, .025); font-size: 11px; }
 .file-row code { overflow: hidden; color: var(--text); text-overflow: ellipsis; white-space: nowrap; }
 .file-stats { color: var(--muted); white-space: nowrap; }
 .file-stats .add { color: var(--green); }
@@ -295,7 +298,7 @@ code, .mono { font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation M
 .relation button { min-width: 0; overflow: hidden; padding: 0; color: var(--cyan); background: transparent; cursor: pointer; text-align: left; text-overflow: ellipsis; white-space: nowrap; }
 .relation button:hover { text-decoration: underline; }
 .relation .none { color: var(--dim); }
-.comparison-summary { padding: 10px; border: 1px solid rgba(212, 135, 97, .24); border-radius: 9px; color: var(--muted); background: var(--cyan-soft); font-size: 11px; }
+.comparison-summary { padding: 10px; border: 1px solid rgba(212, 135, 97, .24); border-radius: 9px; color: var(--text); background: var(--cyan-soft); font-size: 12px; line-height: 1.45; }
 .resume-result { margin-top: 14px; padding: 11px; border: 1px solid rgba(111, 231, 174, .3); border-radius: 9px; background: var(--green-soft); }
 .resume-result strong { display: block; color: var(--green); font-size: 11px; }
 .resume-result p { margin: 4px 0 0; color: var(--muted); font-size: 10px; }
@@ -306,7 +309,7 @@ code, .mono { font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation M
 .resume-grid code { overflow-wrap: anywhere; color: var(--text); }
 .resume-actions { display: grid; grid-template-columns: 1fr; gap: 7px; margin-top: 9px; }
 .detail-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; padding: 12px 16px 16px; border-top: 1px solid var(--line-soft); }
-.detail-actions button { min-height: 31px; padding: 7px 8px; border: 1px solid var(--line); border-radius: 8px; color: var(--muted); background: var(--panel-soft); cursor: pointer; font-size: 10px; }
+.detail-actions button { min-height: 31px; padding: 7px 8px; border: 1px solid var(--line); border-radius: 8px; color: var(--muted); background: var(--panel-soft); cursor: pointer; font-size: 11px; }
 .detail-actions button:hover { border-color: rgba(212, 135, 97, .5); color: var(--text); }
 .detail-actions button.primary { grid-column: 1 / -1; border-color: transparent; color: #2a1b15; background: var(--cyan); font-weight: 800; }
 .detail-actions button[disabled] { cursor: wait; opacity: .6; }
@@ -746,31 +749,30 @@ function detailBody(node) {
     const comparison = state.comparison?.nodeId === node.id ? state.comparison.value : null;
     const summary = comparison
       ? (comparison.summary || ((comparison.filesChanged ?? 0) + " 个文件发生变化，新增 " + (comparison.additions ?? 0) + " 行，删除 " + (comparison.deletions ?? 0) + " 行。"))
-      : "当前提交：" + shortSha(node.commit) + " · 父提交：" + shortSha(node.parent) + "。点击“比较当前”加载经过 Git 校验的文件差异。";
+      : "尚未加载比较结果 · " + shortSha(node.commit) + " ← " + shortSha(node.parent);
     const fileData = comparison?.files ? Object.assign({}, node, { changedFiles: comparison.files }) : node;
-    return '<section class="detail-section"><h3>Code Diff</h3><div class="comparison-summary">' + esc(summary) + '</div></section><section class="detail-section"><h3>Changed Files</h3>' + fileRows(fileData) + '</section>';
+    const hint = comparison ? "" : '<p class="detail-hint">点击底部“比较当前”加载文件差异。</p>';
+    return '<section class="detail-section detail-section-primary"><h3>差异摘要</h3><div class="comparison-summary">' + esc(summary) + '</div>' + hint + '</section><section class="detail-section"><h3>变更文件</h3>' + fileRows(fileData) + '</section>';
   }
   if (state.detailTab === "conversation") {
     const available = node.conversationStatus === "available";
-    return '<section class="detail-section"><h3>Conversation</h3><p>' + esc(conversationSummary(node)) + '</p></section><section class="detail-section"><h3>状态</h3><p class="' + (available ? "" : "warning") + '">' + (available ? "已关联 Trace Conversation。" : "暂无已关联的 AI 对话总结；这不会阻断 Git Trace。") + '</p></section>';
+    return '<section class="detail-section detail-section-primary"><h3>摘要</h3><p>' + esc(conversationSummary(node)) + '</p></section><section class="detail-section"><h3>状态</h3><p class="' + (available ? "" : "warning") + '">' + (available ? "已关联 Trace Conversation。" : "暂无已关联的 AI 对话总结；这不会阻断 Git Trace。") + '</p></section>';
   }
   if (state.detailTab === "relations") {
     const derived = derivedNodes(node);
-    return '<section class="detail-section"><h3>Parent Node / Derived Nodes</h3><div class="relation-list"><div class="relation"><span>Git Parent</span>' + relationButton(node.gitParent || node.parentNodeId, baseNode(node.gitParent || node.parentNodeId)?.title) + '</div><div class="relation"><span>Derived Nodes</span><span>' + (derived.length ? derived.map((child) => '<button data-select="' + esc(child.id) + '">' + esc(child.title) + '</button>').join("、") : '<span class="none">—</span>') + '</span></div></div></section>';
+    return '<section class="detail-section"><h3>关系链</h3><div class="relation-list"><div class="relation"><span>Git Parent</span>' + relationButton(node.gitParent || node.parentNodeId, baseNode(node.gitParent || node.parentNodeId)?.title) + '</div><div class="relation"><span>Derived Nodes</span><span>' + (derived.length ? derived.map((child) => '<button data-select="' + esc(child.id) + '">' + esc(child.title) + '</button>').join("、") : '<span class="none">—</span>') + '</span></div></div></section>';
   }
-  return '<section class="detail-section"><h3>本次目标</h3><p>' + esc(node.goal || node.changes || "未记录目标") + '</p></section><section class="detail-section"><h3>AI Discussion Summary</h3><p>' + esc(conversationSummary(node)) + '</p></section><section class="detail-section"><h3>Key Decisions</h3><p>' + esc(decisionText(node)) + '</p></section><section class="detail-section"><h3>Warnings</h3><p class="' + (warningText(node) === "无" ? "" : "warning") + '">' + esc(warningText(node)) + '</p></section>';
+  return '<section class="detail-section detail-section-primary"><h3>本次目标</h3><p>' + esc(node.goal || node.changes || "未记录目标") + '</p></section><section class="detail-section"><h3>AI 讨论摘要</h3><p>' + esc(conversationSummary(node)) + '</p></section><section class="detail-section"><h3>关键决策</h3><p>' + esc(decisionText(node)) + '</p></section><section class="detail-section"><h3>提醒</h3><p class="' + (warningText(node) === "无" ? "" : "warning") + '">' + esc(warningText(node)) + '</p></section>';
 }
 
 function detailPanel(node) {
   if (!node || !state.detailOpen) return "";
-  const derived = derivedNodes(node);
   const resume = state.lastResume?.sourceNode === node.id ? state.lastResume : null;
   const runningResume = state.runningAction === "resume:" + node.id;
   const resumeMarkup = resume
     ? '<section class="resume-result"><strong>当前工作区已切换</strong><p>当前项目目录已经 checkout 到新分支和目标历史版本；不会创建额外 worktree。现在可以在当前项目中手动创建新的开发对话。</p><div class="handoff-note">不需要再次执行 git switch。若要把本次回退信息带入新对话，请复制启动信息。</div><div class="resume-grid"><div><span>新分支</span><code>' + esc(resume.newBranch) + '</code></div><div><span>项目工作区</span><code>' + esc(resume.worktreePath) + '</code></div><div><span>Session</span><code>' + esc(resume.sessionId) + '</code></div></div><div class="resume-actions"><button class="card-action primary" data-action="copy-resume-prompt" style="width:100%">复制新对话启动信息</button></div></section>'
     : "";
-  const relationMarkup = '<section class="detail-section"><h3>当前项目关系</h3><div class="relation-list"><div class="relation"><span>Git Parent</span>' + relationButton(node.gitParent || node.parentNodeId, baseNode(node.gitParent || node.parentNodeId)?.title) + '</div><div class="relation"><span>Derived Nodes</span><span>' + (derived.length ? derived.length + " 个后续节点" : "—") + '</span></div></div></section>';
-  return '<aside class="detail-panel" aria-label="Trace Card 详情"><header class="detail-header"><div class="node-icon">◆</div><div class="detail-heading"><div class="eyebrow">Selected Trace Card</div><h2>' + esc(node.title) + '</h2><p>' + esc(formatDate(node.createdAt)) + ' · ' + esc(node.commit) + '</p></div><button class="close-detail" data-action="close-detail" aria-label="关闭详情">×</button></header><nav class="detail-tabs" aria-label="版本详情"><button class="detail-tab ' + (state.detailTab === "overview" ? "active" : "") + '" data-tab="overview">概览</button><button class="detail-tab ' + (state.detailTab === "diff" ? "active" : "") + '" data-tab="diff">Code Diff</button><button class="detail-tab ' + (state.detailTab === "conversation" ? "active" : "") + '" data-tab="conversation">Conversation</button><button class="detail-tab ' + (state.detailTab === "relations" ? "active" : "") + '" data-tab="relations">关系</button></nav><div class="detail-scroll"><div class="detail-commit-pair"><div><span class="field-label">当前提交</span><code title="' + esc(node.commit) + '">' + esc(node.commit) + '</code></div><span>vs.</span><div><span class="field-label">上一历史版本</span><code title="' + esc(node.parent) + '">' + esc(node.parent) + '</code></div></div>' + detailBody(node) + resumeMarkup + relationMarkup + '</div><div class="detail-actions"><button data-action="details" data-node="' + esc(node.id) + '">同步完整详情</button><button data-action="compare" data-node="' + esc(node.id) + '">比较当前</button><button class="primary" data-action="resume" data-node="' + esc(node.id) + '" ' + (runningResume ? "disabled" : "") + '>' + (runningResume ? "正在切换当前工作区…" : "从此版本继续") + '</button></div></aside>';
+  return '<aside class="detail-panel" aria-label="Trace Card 详情"><header class="detail-header"><div class="node-icon">◆</div><div class="detail-heading"><div class="eyebrow">Selected Trace Card</div><h2>' + esc(node.title) + '</h2><p>' + esc(formatDate(node.createdAt)) + ' · ' + esc(node.commit) + '</p></div><button class="close-detail" data-action="close-detail" aria-label="关闭详情">×</button></header><nav class="detail-tabs" aria-label="版本详情"><button class="detail-tab ' + (state.detailTab === "overview" ? "active" : "") + '" data-tab="overview">概览</button><button class="detail-tab ' + (state.detailTab === "diff" ? "active" : "") + '" data-tab="diff">Code Diff</button><button class="detail-tab ' + (state.detailTab === "conversation" ? "active" : "") + '" data-tab="conversation">Conversation</button><button class="detail-tab ' + (state.detailTab === "relations" ? "active" : "") + '" data-tab="relations">关系</button></nav><div class="detail-scroll"><div class="detail-commit-pair"><div><span class="field-label">当前提交</span><code title="' + esc(node.commit) + '">' + esc(node.commit) + '</code></div><span>vs.</span><div><span class="field-label">上一历史版本</span><code title="' + esc(node.parent) + '">' + esc(node.parent) + '</code></div></div>' + detailBody(node) + resumeMarkup + '</div><div class="detail-actions"><button data-action="details" data-node="' + esc(node.id) + '">同步完整详情</button><button data-action="compare" data-node="' + esc(node.id) + '">比较当前</button><button class="primary" data-action="resume" data-node="' + esc(node.id) + '" ' + (runningResume ? "disabled" : "") + '>' + (runningResume ? "正在切换当前工作区…" : "从此版本继续") + '</button></div></aside>';
 }
 
 function updateCanvasTransform() {

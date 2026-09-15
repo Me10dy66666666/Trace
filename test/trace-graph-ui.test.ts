@@ -213,6 +213,20 @@ test("keeps only the zoom controls in the graph overlay", async () => {
   assert.doesNotMatch(html, /graph-toolbar|项目版本画布|时间关系|实现关系|relationshipMode/);
 });
 
+test("keeps detail tabs focused and gives primary content stronger hierarchy", async () => {
+  const { root, html } = await loadUi();
+  const card = root.card;
+
+  assert.ok(card);
+  root.dispatch("click", event(card));
+
+  assert.doesNotMatch(root.html, /当前项目关系|class="relation-list"/, "overview should not repeat the relations tab");
+  assert.match(html, /\.detail-section-primary h3/, "primary sections should have a distinct heading style");
+  assert.match(html, /\.detail-section-primary p/, "primary content should have a distinct body style");
+  assert.match(html, /\.detail-hint/, "secondary helper text should use a quieter style");
+  assert.match(html, /font-size: 11px/, "interactive labels should remain readable");
+});
+
 test("distinguishes remote-published cards from selected cards", async () => {
   const { html } = await loadUi();
 
