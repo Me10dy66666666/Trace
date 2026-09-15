@@ -18,9 +18,52 @@ TraceAndBack is a project-scoped development timeline for AI-assisted coding. It
 
 ## Install
 
+### 1. Clone the repository
+
+```bash
+git clone https://github.com/Me10dy66666666/Trace.git
+cd Trace
+```
+
+If you are working from a non-default branch, switch to it after cloning:
+
+```bash
+git branch --all
+git switch feature/mvp-core-foundation
+```
+
+### 2. Check the prerequisites
+
+TraceAndBack requires Node.js 24 or newer, pnpm 11, and Git:
+
+```bash
+node --version
+pnpm --version
+git --version
+```
+
+If pnpm is not installed, install the pinned major version with npm:
+
+```bash
+npm install --global pnpm@11
+```
+
+### 3. Install dependencies
+
+Run this from the repository root:
+
 ```bash
 pnpm install
 ```
+
+### 4. Verify the installation
+
+```bash
+pnpm check
+pnpm test
+```
+
+Both commands should complete successfully before connecting the project to an MCP host.
 
 ## Run
 
