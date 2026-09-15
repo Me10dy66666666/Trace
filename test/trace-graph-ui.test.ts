@@ -221,6 +221,11 @@ test("distinguishes remote-published cards from selected cards", async () => {
   assert.match(html, /published-badge/, "published versions should have a visible marker");
   assert.match(html, /node-card\.published/, "published cards need a distinct visual state");
   assert.match(html, /node-card\.selected\.published/, "selection should override the published highlight");
+  assert.match(
+    html,
+    /\.node-card\.selected \.published-badge \{[\s\S]*color: var\(--green\)/,
+    "the published label should keep its original color when selected"
+  );
 });
 
 test("does not report the published marker as a repository update on every poll", async () => {
