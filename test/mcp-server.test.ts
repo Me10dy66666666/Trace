@@ -407,6 +407,68 @@ test("refreshes the top-level Trace Graph through the local browser API", async 
   }
 });
 
+test("skips remote publication checks for local browser status polling", async () => {
+  let publishedCalls = 0;
+  const trace = {
+    registerRepository: async () => ({
+      id: "repo-test",
+      repositoryPath: "D:\\TraceAndBack"
+    }),
+    getStatus: async () => ({
+      repositoryId: "repo-test",
+      head: "1234567890abcdef",
+      branch: "main",
+      dirty: false,
+      untrackedCount: 0,
+      operationState: "normal" as const,
+      activeTraceSession: null
+    }),
+    getPublishedCommit: async () => {
+      publishedCalls += 1;
+      return "1234567890abcdef";
+    }
+  } as unknown as TraceService;
+  const browser = await createTraceGraphBrowserServer(trace, { port: 0, token: "test-token" });
+  const pageUrl = new URL(browser.url);
+  pageUrl.searchParams.set("repository", "D:\\TraceAndBack");
+
+  const call = async (includePublishedCommit?: boolean) => {
+    const url = new URL("/api/tool", pageUrl);
+    url.searchParams.set("token", "test-token");
+    return await fetch(url, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        name: "trace.get_status",
+        arguments: {
+          repository: "D:\\TraceAndBack",
+          ...(includePublishedCommit === undefined ? {} : { includePublishedCommit })
+        }
+      })
+    });
+  };
+
+  try {
+    const localResponse = await call(false);
+    const localPayload = await localResponse.json() as Readonly<{
+      structuredContent: Readonly<Record<string, unknown>>;
+    }>;
+    assert.equal(localResponse.status, 200);
+    assert.equal(localPayload.structuredContent.publishedCommit, undefined);
+    assert.equal(publishedCalls, 0);
+
+    const fullResponse = await call(true);
+    const fullPayload = await fullResponse.json() as Readonly<{
+      structuredContent: Readonly<Record<string, unknown>>;
+    }>;
+    assert.equal(fullResponse.status, 200);
+    assert.equal(fullPayload.structuredContent.publishedCommit, "1234567890abcdef");
+    assert.equal(publishedCalls, 1);
+  } finally {
+    await browser.close();
+  }
+});
+
 test("marks the current branch's GitHub HEAD as the published version", async () => {
   const fixtureRoot = await mkdtemp(join(tmpdir(), "traceandback-browser-remote-"));
   const repositoryPath = join(fixtureRoot, "repository");

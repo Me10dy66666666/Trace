@@ -26,6 +26,14 @@ type GitCommandResult = Readonly<{
   stderr: string;
 }>;
 
+type GitOperationPaths = Readonly<{
+  mergeHead: string;
+  rebaseApply: string;
+  rebaseMerge: string;
+  cherryPickHead: string;
+  bisectLog: string;
+}>;
+
 export class GitCli implements GitAdapter {
   public async inspectRepository(repositoryPath: string): Promise<RepositoryInspection> {
     const canonicalPath = await this.resolveRepositoryPath(repositoryPath);
@@ -40,14 +48,15 @@ export class GitCli implements GitAdapter {
       );
     }
 
-    const [commonDirectory, head, branch, statusOutput, operationState] = await Promise.all([
+    const [commonDirectory, head, branch, statusOutput, operationPaths] = await Promise.all([
       this.absoluteGitPath(canonicalPath, "--git-common-dir"),
       this.optionalRun(canonicalPath, ["rev-parse", "--verify", "HEAD"]),
       this.currentBranch(canonicalPath),
       this.run(canonicalPath, ["status", "--porcelain=v2", "-z", "--branch", "--ignored=matching"]),
-      this.detectOperationState(canonicalPath)
+      this.gitOperationPaths(canonicalPath)
     ]);
     const status = this.parseStatus(statusOutput.stdout);
+    const operationState = await this.detectOperationState(operationPaths, branch?.trim() || null);
     const fingerprint = createHash("sha256")
       .update(commonDirectory)
       .digest("hex");
@@ -455,26 +464,58 @@ export class GitCli implements GitAdapter {
     return branch?.trim() || null;
   }
 
-  private async detectOperationState(repositoryPath: string): Promise<GitOperationState> {
-    if (await this.gitPathExists(repositoryPath, "MERGE_HEAD")) {
+  private async detectOperationState(paths: GitOperationPaths, branch: string | null): Promise<GitOperationState> {
+    const [mergeHead, rebaseApply, rebaseMerge, cherryPickHead, bisectLog] = await Promise.all([
+      this.pathExists(paths.mergeHead),
+      this.pathExists(paths.rebaseApply),
+      this.pathExists(paths.rebaseMerge),
+      this.pathExists(paths.cherryPickHead),
+      this.pathExists(paths.bisectLog)
+    ]);
+    if (mergeHead) {
       return "merge";
     }
-    const rebaseApply = await this.gitPathExists(repositoryPath, "rebase-apply");
-    const rebaseMerge = await this.gitPathExists(repositoryPath, "rebase-merge");
     if (rebaseApply || rebaseMerge) {
       return "rebase";
     }
-    if (await this.gitPathExists(repositoryPath, "CHERRY_PICK_HEAD")) {
+    if (cherryPickHead) {
       return "cherry_pick";
     }
-    if (await this.gitPathExists(repositoryPath, "BISECT_LOG")) {
+    if (bisectLog) {
       return "bisect";
     }
-    return (await this.currentBranch(repositoryPath)) === null ? "detached" : "normal";
+    return branch === null ? "detached" : "normal";
   }
 
-  private async gitPathExists(repositoryPath: string, gitPath: string): Promise<boolean> {
-    const path = await this.absoluteGitPath(repositoryPath, "--git-path", gitPath);
+  private async gitOperationPaths(repositoryPath: string): Promise<GitOperationPaths> {
+    const result = await this.run(repositoryPath, [
+      "rev-parse",
+      "--path-format=absolute",
+      "--git-path",
+      "MERGE_HEAD",
+      "--git-path",
+      "rebase-apply",
+      "--git-path",
+      "rebase-merge",
+      "--git-path",
+      "CHERRY_PICK_HEAD",
+      "--git-path",
+      "BISECT_LOG"
+    ]);
+    const paths = result.stdout.trim().split(/\r?\n/);
+    if (paths.length !== 5 || paths.some((path) => path.length === 0)) {
+      throw new Error("Git returned malformed operation paths.");
+    }
+    return {
+      mergeHead: paths[0] as string,
+      rebaseApply: paths[1] as string,
+      rebaseMerge: paths[2] as string,
+      cherryPickHead: paths[3] as string,
+      bisectLog: paths[4] as string
+    };
+  }
+
+  private async pathExists(path: string): Promise<boolean> {
     try {
       await access(path);
       return true;
