@@ -1,8 +1,8 @@
 <div align="center">
 
-# TraceAndBack
+# Pastlane
 
-### Git remembers what changed. TraceAndBack remembers how you got there.
+### Git remembers what changed. Pastlane remembers how you got there.
 
 A local-first development timeline for AI-assisted coding, built on **Git**, **MCP**, and structured **AI collaboration summaries**.
 
@@ -17,7 +17,7 @@ A local-first development timeline for AI-assisted coding, built on **Git**, **M
 
 ## Overview
 
-TraceAndBack is a **project-scoped development timeline** for AI-assisted coding.
+Pastlane is a **project-scoped development timeline** for AI-assisted coding.
 
 It combines:
 
@@ -28,7 +28,7 @@ It combines:
 - a browser-based **Trace Graph UI**
 - **local-first** persistence through SQLite
 
-Instead of only showing _what changed_, TraceAndBack helps you understand:
+Instead of only showing _what changed_, Pastlane helps you understand:
 
 - what you were trying to do
 - how a version evolved
@@ -40,16 +40,16 @@ Instead of only showing _what changed_, TraceAndBack helps you understand:
 
 ## See the evolution of your project
 
-TraceAndBack turns repository history into a visual **Trace Graph**.
+Pastlane turns repository history into a visual **Trace Graph**.
 
 You can inspect branches, checkpoints, and continuation paths across a project timeline.
 
 <p align="center">
-  <img src="./docs/assets/trace-graph-overview.png" alt="TraceAndBack full-canvas project Trace Graph" width="100%" />
+  <img src="./docs/assets/trace-graph-overview.png" alt="Pastlane full-canvas project Trace Graph" width="100%" />
 </p>
 
 <p align="center">
-  <img src="./docs/assets/trace-graph-branching.png" alt="TraceAndBack Trace Graph showing branching and checkpoints" width="100%" />
+  <img src="./docs/assets/trace-graph-branching.png" alt="Pastlane Trace Graph showing branching and checkpoints" width="100%" />
 </p>
 
 ---
@@ -68,7 +68,7 @@ You can inspect:
 - key decisions
 
 <p align="center">
-  <img src="./docs/assets/trace-node-detail.png" alt="TraceAndBack Trace Node detail panel" width="100%" />
+  <img src="./docs/assets/trace-node-detail.png" alt="Pastlane Trace Node detail panel" width="100%" />
 </p>
 
 The current browser experience is designed around a full-canvas project view:
@@ -81,7 +81,7 @@ The current browser experience is designed around a full-canvas project view:
 
 ---
 
-## Why TraceAndBack
+## Why Pastlane
 
 AI coding tools are great at helping with the **current task**, but over time it becomes hard to answer:
 
@@ -91,7 +91,7 @@ AI coding tools are great at helping with the **current task**, but over time it
 - What did the AI and human decide here?
 - Which branch represents the safer continuation path?
 
-TraceAndBack solves that by combining **code history + version context + safe recovery**.
+Pastlane solves that by combining **code history + version context + safe recovery**.
 
 ---
 
@@ -99,7 +99,7 @@ TraceAndBack solves that by combining **code history + version context + safe re
 
 ### 1. Project-scoped Trace Graph
 
-TraceAndBack builds an interactive graph for the current repository, instead of mixing unrelated projects together.
+Pastlane builds an interactive graph for the current repository, instead of mixing unrelated projects together.
 
 Each Trace Node can include:
 
@@ -139,7 +139,7 @@ This avoids destructive history rewrites and makes experimentation safer.
 
 ### 4. Structured AI collaboration summaries
 
-TraceAndBack supports host-generated `WorkTraceSummary` persistence.
+Pastlane supports host-generated `WorkTraceSummary` persistence.
 
 That means an AI host can summarize the current visible development session and attach structured context to a Trace Node without exporting hidden reasoning or raw internal chain-of-thought.
 
@@ -154,7 +154,7 @@ Typical summary content includes:
 
 ### 5. Browser-based Trace Graph UI
 
-TraceAndBack provides an interactive browser UI through MCP so you can:
+Pastlane provides an interactive browser UI through MCP so you can:
 
 - inspect project history visually
 - select nodes
@@ -245,7 +245,7 @@ The bundled MCP configuration lives in:
 
 ## Quick Start
 
-1. Start TraceAndBack
+1. Start Pastlane
 2. Connect it to your MCP-compatible host
 3. Open the graph with `trace.start`
 4. Inspect repository status, history, branches, and the current published marker
@@ -263,7 +263,7 @@ The bundled MCP configuration lives in:
 | --- | --- |
 | `trace.start` | Start the current project's lightweight Trace Graph and return a browser-openable URL. |
 | `trace.render_graph` | Render the complete Trace Graph for a specific repository or repository ID. |
-| `trace.get_status` | Inspect the repository and return TraceAndBack status. |
+| `trace.get_status` | Inspect the repository and return Pastlane status. |
 | `trace.get_history` | Return Trace timeline history. |
 | `trace.get_node` | Return a Trace Node's detailed information. |
 | `trace.compare` | Compare two Trace Nodes through verified Git commits. |
@@ -317,11 +317,11 @@ This repository includes a host-side skill package:
 skills/traceandback-worktrace-finalizer/
 ```
 
-Its job is to summarize the **current visible human–AI development session** and persist a structured `WorkTraceSummary` into TraceAndBack.
+Its job is to summarize the **current visible human–AI development session** and persist a structured `WorkTraceSummary` into Pastlane.
 
 This separation keeps responsibilities clear:
 
-- **TraceAndBack Core** → Git, checkpoints, node state, persistence, recovery
+- **Pastlane Core** → Git, checkpoints, node state, persistence, recovery
 - **Host-side skill** → summarize the visible collaboration session
 
 ---
@@ -391,7 +391,7 @@ Trace/
 
 ## Design Principles
 
-TraceAndBack is built around a few core ideas:
+Pastlane is built around a few core ideas:
 
 - **Project-scoped** — each repository has its own trace timeline
 - **Git-backed** — recovery is based on real commits, not opaque snapshots
@@ -403,7 +403,7 @@ TraceAndBack is built around a few core ideas:
 
 ## Project Status
 
-TraceAndBack is currently an early-stage `0.1.0` project.
+Pastlane is currently an early-stage `0.1.0` project.
 
 - repository: public
 - package: currently private / unpublished
