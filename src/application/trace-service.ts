@@ -144,10 +144,6 @@ export class TraceService {
     }
 
     const repository = this.requireRepository(from.repositoryId);
-    await Promise.all([
-      this.dependencies.git.verifyCommit(repository.repositoryPath, from.commit),
-      this.dependencies.git.verifyCommit(repository.repositoryPath, to.commit)
-    ]);
     const files = await this.dependencies.git.compareCommits(repository.repositoryPath, from.commit, to.commit);
     const additions = files.reduce((total, file) => total + file.additions, 0);
     const deletions = files.reduce((total, file) => total + file.deletions, 0);
@@ -164,7 +160,6 @@ export class TraceService {
   public async getNode(input: Readonly<{ nodeId: string }>): Promise<TraceNodeDetail> {
     const node = this.requireNode(input.nodeId);
     const repository = this.requireRepository(node.repositoryId);
-    await this.dependencies.git.verifyCommit(repository.repositoryPath, node.commit);
     const changedFiles = await this.dependencies.git.getCommitChangedFiles(repository.repositoryPath, node.commit);
 
     const workSummary = this.dependencies.store.getWorkTraceSummary(node.id);

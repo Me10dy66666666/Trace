@@ -425,6 +425,7 @@ const CANVAS_PADDING = 32;
 const MIN_ZOOM = .25;
 const MAX_ZOOM = 2;
 const AUTO_REFRESH_INTERVAL = 3000;
+const PUBLISHED_REFRESH_INTERVAL = 30000;
 const state = {
   payload: null,
   selectedId: null,
@@ -435,6 +436,7 @@ const state = {
   autoRefreshTimer: null,
   autoRefreshInFlight: false,
   repositoryRevision: null,
+  lastPublishedCheckAt: null,
   lastAutoRefreshAt: null,
   centerViewportOnNextRender: false,
   suppressCardClickUntil: 0,
@@ -590,6 +592,9 @@ function applyGraphResult(result) {
     : payload.graph.nodes[0]?.id ?? null;
   state.connected = true;
   state.publishedCommit = typeof payload.graph.publishedCommit === "string" ? payload.graph.publishedCommit : null;
+  if (Object.prototype.hasOwnProperty.call(payload.graph, "publishedCommit")) {
+    state.lastPublishedCheckAt = Date.now();
+  }
   state.repositoryRevision = repositoryRevision(payload.status, payload.graph.publishedCommit);
   state.positions = layoutGraph(payload.graph);
   state.comparison = null;
@@ -797,10 +802,16 @@ async function refreshGraphAutomatically() {
   if (!browserConfig || !state.payload || state.autoRefreshInFlight) return;
   state.autoRefreshInFlight = true;
   try {
-    const result = await callTool("trace.get_status", { repository: browserConfig.repository });
+    const includePublishedCommit = state.lastPublishedCheckAt === null
+      || Date.now() - state.lastPublishedCheckAt >= PUBLISHED_REFRESH_INTERVAL;
+    const result = await callTool("trace.get_status", {
+      repository: browserConfig.repository,
+      includePublishedCommit
+    });
     const error = errorFromResult(result);
     if (error) throw error;
-    const revision = repositoryRevision(resultValue(result));
+    if (includePublishedCommit) state.lastPublishedCheckAt = Date.now();
+    const revision = repositoryRevision(resultValue(result), state.publishedCommit);
     if (!revision || revision === state.repositoryRevision) return;
     const refreshed = await callTool("trace.render_graph", renderGraphArguments());
     const refreshError = errorFromResult(refreshed);
