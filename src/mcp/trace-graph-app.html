@@ -1,9 +1,9 @@
 <!doctype html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>TraceAndBack · Project Trace Graph</title>
+<title>Pastlane · Project Trace Graph</title>
 <style>
 :root {
   color-scheme: dark;
@@ -424,6 +424,7 @@ const VERTICAL_GAP = 56;
 const CANVAS_PADDING = 32;
 const MIN_ZOOM = .25;
 const MAX_ZOOM = 2;
+const PROJECT_NAME = "Pastlane";
 const AUTO_REFRESH_INTERVAL = 3000;
 const PUBLISHED_REFRESH_INTERVAL = 30000;
 const state = {
@@ -468,23 +469,23 @@ const selected = () => {
 const shortSha = (value) => value && value !== "—" ? String(value).slice(0, 8) : "—";
 const formatDate = (value) => {
   const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? String(value ?? "—") : date.toLocaleString("zh-CN", { dateStyle: "medium", timeStyle: "short" });
+  return Number.isNaN(date.getTime()) ? String(value ?? "—") : date.toLocaleString("en-US", { dateStyle: "medium", timeStyle: "short" });
 };
 const changedFiles = (node) => Array.isArray(node?.changedFiles) ? node.changedFiles : [];
 const fileNames = (node) => {
   const files = changedFiles(node);
-  if (files.length === 0) return "没有检测到文件差异";
-  const names = files.slice(0, 3).map((file) => file.path).join("、");
-  return files.length > 3 ? names + " 等 " + files.length + " 个文件" : names;
+  if (files.length === 0) return "No file changes detected";
+  const names = files.slice(0, 3).map((file) => file.path).join(", ");
+  return files.length > 3 ? names + " and " + files.length + " files" : names;
 };
 const decisions = (node) => {
   if (Array.isArray(node?.decisions) && node.decisions.length > 0) return node.decisions;
-  if (node?.decisions && typeof node.decisions === "string") return [{ title: "关键决策", reason: node.decisions }];
+  if (node?.decisions && typeof node.decisions === "string") return [{ title: "Key Decision", reason: node.decisions }];
   return [];
 };
 const decisionText = (node) => {
   const list = decisions(node);
-  return list.length ? list.map((decision) => decision.title + ": " + decision.reason).join("；") : "未记录关键决策。";
+  return list.length ? list.map((decision) => decision.title + ": " + decision.reason).join("; ") : "No key decisions recorded.";
 };
 const stats = (node) => {
   if (node?.diffStats) return String(node.diffStats);
@@ -493,8 +494,8 @@ const stats = (node) => {
   const deletions = files.reduce((total, file) => total + Number(file.deletions || 0), 0);
   return "+" + additions + " / -" + deletions + " lines";
 };
-const conversationSummary = (node) => node?.conversationSummary || node?.summary || "暂无已关联的 AI 对话总结。";
-const warningText = (node) => node?.warnings || (node?.conversationStatus === "available" ? "无" : "暂无已关联 AI 对话总结");
+const conversationSummary = (node) => node?.conversationSummary || node?.summary || "No linked AI conversation summary.";
+const warningText = (node) => node?.warnings || (node?.conversationStatus === "available" ? "None" : "No linked AI conversation summary");
 const parentId = (node) => node?.parentNodeId || node?.gitParent || null;
 
 function notify(message) {
@@ -520,18 +521,18 @@ function resultValue(result) {
 function errorFromResult(result) {
   const value = resultValue(result);
   if (result?.isError || (value?.code && value?.message && !value?.graph && !value?.newBranch)) {
-    return new Error(value.message || "Trace 操作失败。");
+    return new Error(value.message || "Trace operation failed.");
   }
   return null;
 }
 
 function renderGraphArguments() {
-  if (!browserConfig) throw new Error("Trace Graph 浏览器地址缺少本地服务参数。");
+  if (!browserConfig) throw new Error("The Trace Graph URL is missing local service parameters.");
   return { repository: browserConfig.repository, limit: 50, cursor: null };
 }
 
 async function callTool(name, args) {
-  if (!browserConfig) throw new Error("Trace Graph 浏览器地址缺少本地服务参数。");
+  if (!browserConfig) throw new Error("The Trace Graph URL is missing local service parameters.");
   const url = new URL("/api/tool", window.location.href);
   url.searchParams.set("token", browserConfig.token);
   const response = await fetch(url, {
@@ -540,7 +541,7 @@ async function callTool(name, args) {
     body: JSON.stringify({ name, arguments: args })
   });
   const result = await response.json();
-  if (!response.ok) throw new Error(result?.error || "浏览器数据服务请求失败。");
+  if (!response.ok) throw new Error(result?.error || "The browser data service request failed.");
   return result;
 }
 
@@ -548,15 +549,15 @@ function resumePrompt(node, result) {
   const data = graph();
   return [
     "[TRACEANDBACK_CONTINUE_REQUEST]",
-    "TraceAndBack 已将当前项目工作区切换到历史版本对应的新分支。",
-    "请在当前项目工作区手动创建新的开发对话；不需要再次执行 git switch，也不需要创建额外 worktree。",
-    "项目：" + (data?.name ?? "当前项目"),
-    "源 Trace Card：" + (node?.title ?? "历史版本") + "（" + (node?.commit ?? "—") + "）",
-    "新分支：" + result.newBranch,
-    "当前项目工作区：" + result.worktreePath,
-    "Trace Session：" + result.sessionId,
-    "继续策略：" + (result.strategy ?? "branch"),
-    "原分支仍保留在原提交，不执行 reset 或覆盖。",
+    "Pastlane switched the current project workspace to a new branch at the selected historical version.",
+    "Create a new development conversation in the current project workspace; do not run git switch again or create another worktree.",
+    "Project: " + PROJECT_NAME,
+    "Source Trace Card: " + (node?.title ?? "Historical version") + " (" + (node?.commit ?? "—") + ")",
+    "New branch: " + result.newBranch,
+    "Project workspace: " + result.worktreePath,
+    "Trace Session: " + result.sessionId,
+    "Continuation strategy: " + (result.strategy ?? "branch"),
+    "The original branch remains at its original commit; no reset or overwrite is performed.",
     "[/TRACEANDBACK_CONTINUE_REQUEST]"
   ].join("\n");
 }
@@ -565,19 +566,19 @@ async function copyResumePrompt() {
   const node = selected();
   const result = state.lastResume;
   if (!node || !result) {
-    notify("请先从一个 Trace Card 继续。");
+    notify("Select a Trace Card to continue from first.");
     return;
   }
   const clipboard = globalThis.navigator?.clipboard;
   if (!clipboard?.writeText) {
-    notify("当前浏览器不支持复制，请直接使用下方项目工作区路径。");
+    notify("This browser does not support copying. Use the project workspace path below.");
     return;
   }
   try {
     await clipboard.writeText(resumePrompt(node, result));
-    notify("新对话启动信息已复制。");
+    notify("The new conversation prompt was copied.");
   } catch {
-    notify("复制失败，请直接使用下方项目工作区路径。");
+    notify("Copy failed. Use the project workspace path below.");
   }
 }
 
@@ -724,8 +725,8 @@ function card(node, index) {
   const published = node.commit === state.publishedCommit;
   const active = node.id === state.selectedId ? " selected" : "";
   const publishedClass = published ? " published" : "";
-  const update = node.changes || node.goal || node.title || "未记录更新说明";
-  return '<article class="node-card' + publishedClass + active + '" data-node="' + esc(node.id) + '" style="left:' + position.left + 'px;top:' + position.top + 'px" aria-label="' + esc(node.title) + ' Trace Card"><div class="node-card-head"><span class="node-icon">◆</span><span class="node-card-label">更新说明</span>' + (published ? '<span class="published-badge" title="已发布到远端仓库">已发布</span>' : '') + '</div><div class="node-time"><span>提交时间</span>' + esc(formatDate(node.createdAt)) + '</div><div class="node-update"><strong title="' + esc(node.title) + '">' + esc(node.title || "未命名版本") + '</strong><p title="' + esc(update) + '">' + esc(update) + '</p></div><div class="node-commit"><span class="field-label">仓库提交编号</span><code title="' + esc(node.commit) + '">' + esc(shortSha(node.commit)) + '</code></div></article>';
+  const update = node.changes || node.goal || node.title || "No update notes recorded";
+  return '<article class="node-card' + publishedClass + active + '" data-node="' + esc(node.id) + '" style="left:' + position.left + 'px;top:' + position.top + 'px" aria-label="' + esc(node.title) + ' Trace Card"><div class="node-card-head"><span class="node-icon">◆</span><span class="node-card-label">Update Notes</span>' + (published ? '<span class="published-badge" title="Published to remote repository">Published</span>' : '') + '</div><div class="node-time"><span>Commit Time</span>' + esc(formatDate(node.createdAt)) + '</div><div class="node-update"><strong title="' + esc(node.title) + '">' + esc(node.title || "Untitled version") + '</strong><p title="' + esc(update) + '">' + esc(update) + '</p></div><div class="node-commit"><span class="field-label">Repository Commit ID</span><code title="' + esc(node.commit) + '">' + esc(shortSha(node.commit)) + '</code></div></article>';
 }
 
 function relationButton(id, label) {
@@ -736,7 +737,7 @@ function relationButton(id, label) {
 
 function fileRows(node) {
   const files = changedFiles(node);
-  if (files.length === 0) return '<p class="empty-value">此版本没有检测到文件差异。</p>';
+  if (files.length === 0) return '<p class="empty-value">No file changes detected in this version.</p>';
   return '<ul class="file-list">' + files.map((file) => '<li class="file-row"><code title="' + esc(file.path) + '">' + esc(file.path) + '</code><span class="file-stats"><span class="add">+' + esc(file.additions) + '</span> <span class="del">-' + esc(file.deletions) + '</span></span></li>').join("") + '</ul>';
 }
 
@@ -753,21 +754,21 @@ function detailBody(node) {
   if (state.detailTab === "diff") {
     const comparison = state.comparison?.nodeId === node.id ? state.comparison.value : null;
     const summary = comparison
-      ? (comparison.summary || ((comparison.filesChanged ?? 0) + " 个文件发生变化，新增 " + (comparison.additions ?? 0) + " 行，删除 " + (comparison.deletions ?? 0) + " 行。"))
-      : "尚未加载比较结果 · " + shortSha(node.commit) + " ← " + shortSha(node.parent);
+      ? (comparison.summary || ((comparison.filesChanged ?? 0) + " files changed, " + (comparison.additions ?? 0) + " additions, " + (comparison.deletions ?? 0) + " deletions."))
+      : "Comparison not loaded · " + shortSha(node.commit) + " ← " + shortSha(node.parent);
     const fileData = comparison?.files ? Object.assign({}, node, { changedFiles: comparison.files }) : node;
-    const hint = comparison ? "" : '<p class="detail-hint">点击底部“比较当前”加载文件差异。</p>';
-    return '<section class="detail-section detail-section-primary"><h3>差异摘要</h3><div class="comparison-summary">' + esc(summary) + '</div>' + hint + '</section><section class="detail-section"><h3>变更文件</h3>' + fileRows(fileData) + '</section>';
+    const hint = comparison ? "" : '<p class="detail-hint">Click “Compare Current” below to load file changes.</p>';
+    return '<section class="detail-section detail-section-primary"><h3>Diff Summary</h3><div class="comparison-summary">' + esc(summary) + '</div>' + hint + '</section><section class="detail-section"><h3>Changed Files</h3>' + fileRows(fileData) + '</section>';
   }
   if (state.detailTab === "conversation") {
     const available = node.conversationStatus === "available";
-    return '<section class="detail-section detail-section-primary"><h3>摘要</h3><p>' + esc(conversationSummary(node)) + '</p></section><section class="detail-section"><h3>状态</h3><p class="' + (available ? "" : "warning") + '">' + (available ? "已关联 Trace Conversation。" : "暂无已关联的 AI 对话总结；这不会阻断 Git Trace。") + '</p></section>';
+    return '<section class="detail-section detail-section-primary"><h3>Summary</h3><p>' + esc(conversationSummary(node)) + '</p></section><section class="detail-section"><h3>Status</h3><p class="' + (available ? "" : "warning") + '">' + (available ? "Trace Conversation linked." : "No linked AI conversation summary; this does not block Git Trace.") + '</p></section>';
   }
   if (state.detailTab === "relations") {
     const derived = derivedNodes(node);
-    return '<section class="detail-section"><h3>关系链</h3><div class="relation-list"><div class="relation"><span>Git Parent</span>' + relationButton(node.gitParent || node.parentNodeId, baseNode(node.gitParent || node.parentNodeId)?.title) + '</div><div class="relation"><span>Derived Nodes</span><span>' + (derived.length ? derived.map((child) => '<button data-select="' + esc(child.id) + '">' + esc(child.title) + '</button>').join("、") : '<span class="none">—</span>') + '</span></div></div></section>';
+    return '<section class="detail-section"><h3>Relations</h3><div class="relation-list"><div class="relation"><span>Git Parent</span>' + relationButton(node.gitParent || node.parentNodeId, baseNode(node.gitParent || node.parentNodeId)?.title) + '</div><div class="relation"><span>Derived Nodes</span><span>' + (derived.length ? derived.map((child) => '<button data-select="' + esc(child.id) + '">' + esc(child.title) + '</button>').join(", ") : '<span class="none">—</span>') + '</span></div></div></section>';
   }
-  return '<section class="detail-section detail-section-primary"><h3>本次目标</h3><p>' + esc(node.goal || node.changes || "未记录目标") + '</p></section><section class="detail-section"><h3>AI 讨论摘要</h3><p>' + esc(conversationSummary(node)) + '</p></section><section class="detail-section"><h3>关键决策</h3><p>' + esc(decisionText(node)) + '</p></section><section class="detail-section"><h3>提醒</h3><p class="' + (warningText(node) === "无" ? "" : "warning") + '">' + esc(warningText(node)) + '</p></section>';
+  return '<section class="detail-section detail-section-primary"><h3>Current Goal</h3><p>' + esc(node.goal || node.changes || "No goal recorded") + '</p></section><section class="detail-section"><h3>AI Discussion Summary</h3><p>' + esc(conversationSummary(node)) + '</p></section><section class="detail-section"><h3>Key Decisions</h3><p>' + esc(decisionText(node)) + '</p></section><section class="detail-section"><h3>Reminders</h3><p class="' + (warningText(node) === "None" ? "" : "warning") + '">' + esc(warningText(node)) + '</p></section>';
 }
 
 function detailPanel(node) {
@@ -775,9 +776,9 @@ function detailPanel(node) {
   const resume = state.lastResume?.sourceNode === node.id ? state.lastResume : null;
   const runningResume = state.runningAction === "resume:" + node.id;
   const resumeMarkup = resume
-    ? '<section class="resume-result"><strong>当前工作区已切换</strong><p>当前项目目录已经 checkout 到新分支和目标历史版本；不会创建额外 worktree。现在可以在当前项目中手动创建新的开发对话。</p><div class="handoff-note">不需要再次执行 git switch。若要把本次回退信息带入新对话，请复制启动信息。</div><div class="resume-grid"><div><span>新分支</span><code>' + esc(resume.newBranch) + '</code></div><div><span>项目工作区</span><code>' + esc(resume.worktreePath) + '</code></div><div><span>Session</span><code>' + esc(resume.sessionId) + '</code></div></div><div class="resume-actions"><button class="card-action primary" data-action="copy-resume-prompt" style="width:100%">复制新对话启动信息</button></div></section>'
+    ? '<section class="resume-result"><strong>Workspace Switched</strong><p>The current project directory has been checked out to a new branch at the target historical version; no additional worktree was created. You can now create a new development conversation in this project workspace.</p><div class="handoff-note">Do not run git switch again. Copy the prompt below if you want to carry this continuation context into the new conversation.</div><div class="resume-grid"><div><span>New Branch</span><code>' + esc(resume.newBranch) + '</code></div><div><span>Project Workspace</span><code>' + esc(resume.worktreePath) + '</code></div><div><span>Session</span><code>' + esc(resume.sessionId) + '</code></div></div><div class="resume-actions"><button class="card-action primary" data-action="copy-resume-prompt" style="width:100%">Copy New Conversation Prompt</button></div></section>'
     : "";
-  return '<aside class="detail-panel" aria-label="Trace Card 详情"><header class="detail-header"><div class="node-icon">◆</div><div class="detail-heading"><div class="eyebrow">Selected Trace Card</div><h2>' + esc(node.title) + '</h2><p>' + esc(formatDate(node.createdAt)) + ' · ' + esc(node.commit) + '</p></div><button class="close-detail" data-action="close-detail" aria-label="关闭详情">×</button></header><nav class="detail-tabs" aria-label="版本详情"><button class="detail-tab ' + (state.detailTab === "overview" ? "active" : "") + '" data-tab="overview">概览</button><button class="detail-tab ' + (state.detailTab === "diff" ? "active" : "") + '" data-tab="diff">Code Diff</button><button class="detail-tab ' + (state.detailTab === "conversation" ? "active" : "") + '" data-tab="conversation">Conversation</button><button class="detail-tab ' + (state.detailTab === "relations" ? "active" : "") + '" data-tab="relations">关系</button></nav><div class="detail-scroll"><div class="detail-commit-pair"><div><span class="field-label">当前提交</span><code title="' + esc(node.commit) + '">' + esc(node.commit) + '</code></div><span>vs.</span><div><span class="field-label">上一历史版本</span><code title="' + esc(node.parent) + '">' + esc(node.parent) + '</code></div></div>' + detailBody(node) + resumeMarkup + '</div><div class="detail-actions"><button data-action="details" data-node="' + esc(node.id) + '">同步完整详情</button><button data-action="compare" data-node="' + esc(node.id) + '">比较当前</button><button class="primary" data-action="resume" data-node="' + esc(node.id) + '" ' + (runningResume ? "disabled" : "") + '>' + (runningResume ? "正在切换当前工作区…" : "从此版本继续") + '</button></div></aside>';
+  return '<aside class="detail-panel" aria-label="Trace Card Details"><header class="detail-header"><div class="node-icon">◆</div><div class="detail-heading"><div class="eyebrow">Selected Trace Card</div><h2>' + esc(node.title) + '</h2><p>' + esc(formatDate(node.createdAt)) + ' · ' + esc(node.commit) + '</p></div><button class="close-detail" data-action="close-detail" aria-label="Close Details">×</button></header><nav class="detail-tabs" aria-label="Version Details"><button class="detail-tab ' + (state.detailTab === "overview" ? "active" : "") + '" data-tab="overview">Overview</button><button class="detail-tab ' + (state.detailTab === "diff" ? "active" : "") + '" data-tab="diff">Code Diff</button><button class="detail-tab ' + (state.detailTab === "conversation" ? "active" : "") + '" data-tab="conversation">Conversation</button><button class="detail-tab ' + (state.detailTab === "relations" ? "active" : "") + '" data-tab="relations">Relations</button></nav><div class="detail-scroll"><div class="detail-commit-pair"><div><span class="field-label">Current Commit</span><code title="' + esc(node.commit) + '">' + esc(node.commit) + '</code></div><span>vs.</span><div><span class="field-label">Previous Version</span><code title="' + esc(node.parent) + '">' + esc(node.parent) + '</code></div></div>' + detailBody(node) + resumeMarkup + '</div><div class="detail-actions"><button data-action="details" data-node="' + esc(node.id) + '">Sync Full Details</button><button data-action="compare" data-node="' + esc(node.id) + '">Compare Current</button><button class="primary" data-action="resume" data-node="' + esc(node.id) + '" ' + (runningResume ? "disabled" : "") + '>' + (runningResume ? "Switching Workspace…" : "Continue from This Version") + '</button></div></aside>';
 }
 
 function updateCanvasTransform() {
@@ -816,9 +817,9 @@ async function refreshGraphAutomatically() {
     const refreshed = await callTool("trace.render_graph", renderGraphArguments());
     const refreshError = errorFromResult(refreshed);
     if (refreshError) throw refreshError;
-    if (!applyGraphResult(refreshed)) throw new Error("自动更新返回了无效的 Trace Graph。");
+    if (!applyGraphResult(refreshed)) throw new Error("Automatic refresh returned an invalid Trace Graph.");
     state.lastAutoRefreshAt = Date.now();
-    notify("检测到仓库更新，Trace 图已自动同步。");
+    notify("Repository update detected; the Trace Graph synced automatically.");
   } catch {
     // Keep the current graph usable; the manual refresh action remains available.
   } finally {
@@ -852,20 +853,20 @@ function render() {
   const root = document.getElementById("app");
   const data = graph();
   if (!data) {
-    const heading = browserConfig ? "正在读取当前项目的 Git 历史…" : "浏览器地址无效";
+    const heading = browserConfig ? "Loading the current project's Git history…" : "Invalid browser address";
     const description = browserConfig
-      ? "正在连接本机 Trace 数据服务。"
-      : "请从 TraceAndBack 工具重新打开项目图谱。";
-    root.innerHTML = "<main class=\"empty\"><div class=\"eyebrow\">TraceAndBack Browser</div><h1>" + heading + "</h1><p>" + description + "</p></main>";
+      ? "Connecting to the local Trace data service."
+      : "Reopen the project graph from Pastlane tools.";
+    root.innerHTML = "<main class=\"empty\"><div class=\"eyebrow\">Pastlane Browser</div><h1>" + heading + "</h1><p>" + description + "</p></main>";
     return;
   }
   const nodes = graphNodes();
   const current = selected();
   const worldStyle = "width:" + state.bounds.width + "px;height:" + state.bounds.height + "px";
   const emptyOrGraph = nodes.length === 0
-    ? "<main class=\"empty\"><div class=\"eyebrow\">Repository connected</div><h1>当前项目还没有 Trace Card</h1><p>创建第一个 Git 提交后点击刷新，版本卡会出现在项目图中。</p></main>"
-    : "<main class=\"workspace\"><div class=\"canvas-zoom-tools\" aria-label=\"缩放控制\"><div class=\"graph-tools\"><button class=\"graph-tool\" data-action=\"zoom-out\" aria-label=\"缩小\">−</button><span class=\"zoom-label\">" + Math.round(state.zoom * 100) + "%</span><button class=\"graph-tool\" data-action=\"zoom-in\" aria-label=\"放大\">＋</button><button class=\"graph-tool\" data-action=\"zoom-reset\" aria-label=\"重置缩放\">⌂</button></div></div><div class=\"canvas-viewport\" aria-label=\"项目版本图谱，可拖动和缩放\"><div class=\"canvas-world\" style=\"" + worldStyle + "\">" + graphEdges(data) + nodes.map(card).join("") + "</div></div>" + detailPanel(current) + "</main>";
-  root.innerHTML = "<div class=\"shell\"><header class=\"topbar\"><div class=\"brand-mark\">↗</div><div class=\"heading\"><strong>" + esc(data.name) + " · Project Trace Graph</strong><span>" + esc(data.branch) + " · " + esc(data.status) + "</span></div><div class=\"topbar-spacer\"></div><div class=\"connection\">" + (state.connected ? "本地数据服务 · 自动同步" : "连接中") + "</div><button class=\"toolbar-button\" data-action=\"refresh\">刷新</button></header>" + emptyOrGraph + "</div>";
+    ? "<main class=\"empty\"><div class=\"eyebrow\">Repository connected</div><h1>No Trace Cards in this project yet</h1><p>Create your first Git commit, then click Refresh to add a version card to the project graph.</p></main>"
+    : "<main class=\"workspace\"><div class=\"canvas-zoom-tools\" aria-label=\"Zoom Controls\"><div class=\"graph-tools\"><button class=\"graph-tool\" data-action=\"zoom-out\" aria-label=\"Zoom Out\">−</button><span class=\"zoom-label\">" + Math.round(state.zoom * 100) + "%</span><button class=\"graph-tool\" data-action=\"zoom-in\" aria-label=\"Zoom In\">＋</button><button class=\"graph-tool\" data-action=\"zoom-reset\" aria-label=\"Reset Zoom\">⌂</button></div></div><div class=\"canvas-viewport\" aria-label=\"Project version graph; drag to pan and zoom\"><div class=\"canvas-world\" style=\"" + worldStyle + "\">" + graphEdges(data) + nodes.map(card).join("") + "</div></div>" + detailPanel(current) + "</main>";
+  root.innerHTML = "<div class=\"shell\"><header class=\"topbar\"><div class=\"brand-mark\">↗</div><div class=\"heading\"><strong>" + PROJECT_NAME + " · Project Trace Graph</strong><span>" + esc(data.branch) + " · " + esc(data.status) + "</span></div><div class=\"topbar-spacer\"></div><div class=\"connection\">" + (state.connected ? "Local data service · Automatic sync" : "Connecting") + "</div><button class=\"toolbar-button\" data-action=\"refresh\">Refresh</button></header>" + emptyOrGraph + "</div>";
   const viewport = root.querySelector(".canvas-viewport");
   if (viewport) {
     const centerViewport = state.centerViewportOnNextRender;
@@ -921,9 +922,9 @@ async function act(action, nodeId, relation) {
       const result = await callTool("trace.render_graph", renderGraphArguments());
       const error = errorFromResult(result);
       if (error) throw error;
-      if (!applyGraphResult(result)) throw new Error("Trace Graph 返回了无效数据。");
+      if (!applyGraphResult(result)) throw new Error("Trace Graph returned invalid data.");
       startAutoRefresh();
-      notify("项目 Trace Graph 已刷新。");
+      notify("Project Trace Graph refreshed.");
       return;
     }
     if (action === "close-detail") {
@@ -961,13 +962,13 @@ async function act(action, nodeId, relation) {
       state.runningAction = null;
       state.detailTab = "overview";
       render();
-      notify("版本详情已同步。");
+      notify("Version details synced.");
       return;
     }
     if (action === "compare") {
       const fromNode = node.parentNodeId || node.gitParent;
       if (!fromNode) {
-        notify("初始版本没有可比较的父版本。");
+        notify("The initial version has no comparable parent.");
         render();
         return;
       }
@@ -980,7 +981,7 @@ async function act(action, nodeId, relation) {
       state.comparison = { nodeId: node.id, value: resultValue(result) };
       state.runningAction = null;
       render();
-      notify("Code Diff 已加载。");
+      notify("Code Diff loaded.");
       return;
     }
     if (action === "resume") {
@@ -990,7 +991,7 @@ async function act(action, nodeId, relation) {
       const error = errorFromResult(result);
       if (error) throw error;
       const value = resultValue(result);
-      if (!value?.newBranch || !value?.worktreePath) throw new Error("恢复操作没有返回可验证的工作区。");
+      if (!value?.newBranch || !value?.worktreePath) throw new Error("The resume operation did not return a verifiable workspace.");
       state.lastResume = value;
       state.runningAction = null;
       state.detailTab = "overview";
@@ -1001,12 +1002,12 @@ async function act(action, nodeId, relation) {
         // The Git operation already succeeded; the user can refresh the browser page.
       }
       render();
-      notify("已从 " + shortSha(node.commit) + " 将当前工作区切换到新分支：" + value.newBranch + "。现在可手动创建新对话。");
+      notify("Switched the current workspace from " + shortSha(node.commit) + " to a new branch: " + value.newBranch + ". You can now create a new conversation manually.");
     }
   } catch (error) {
     state.runningAction = null;
     render();
-    notify("操作失败：" + (error?.message ?? "未知错误"));
+    notify("Operation failed: " + (error?.message ?? "Unknown error"));
   }
 }
 
@@ -1021,11 +1022,11 @@ async function loadInitialGraph() {
     const result = await callTool("trace.render_graph", renderGraphArguments());
     const error = errorFromResult(result);
     if (error) throw error;
-    if (!applyGraphResult(result)) throw new Error("Trace Graph 返回了无效数据。");
+    if (!applyGraphResult(result)) throw new Error("Trace Graph returned invalid data.");
     startAutoRefresh();
   } catch (error) {
     state.connected = false;
-    notify("加载失败：" + (error?.message ?? "无法连接本地数据服务。"));
+    notify("Loading failed: " + (error?.message ?? "Unable to connect to the local data service."));
   } finally {
     state.runningAction = null;
     render();

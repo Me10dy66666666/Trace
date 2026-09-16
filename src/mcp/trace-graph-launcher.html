@@ -1,9 +1,9 @@
 <!doctype html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>TraceAndBack</title>
+  <title>Pastlane</title>
   <style>
     :root { color-scheme: dark; font-family: Inter, ui-sans-serif, system-ui, sans-serif; }
     body { display: grid; min-height: 100vh; margin: 0; place-items: center; color: #e7edf5; background: #0b1018; }
@@ -16,9 +16,9 @@
 </head>
 <body>
   <main>
-    <div class="eyebrow">TraceAndBack</div>
-    <h1>正在打开项目 Trace Graph</h1>
-    <p id="message">正在连接 Codex 内置浏览器……</p>
+    <div class="eyebrow">Pastlane</div>
+    <h1>Opening Project Trace Graph</h1>
+    <p id="message">Connecting to the Codex in-app browser…</p>
   </main>
   <script>
     const browserUrl = new URL("__TRACEANDBACK_BROWSER_URL__");
@@ -29,7 +29,7 @@
     async function openBrowser() {
       const repository = payload?.repository?.path;
       if (!repository || typeof window.openai?.openExternal !== "function") {
-        message.textContent = "无法打开顶级浏览器页面：Codex 浏览器能力不可用。";
+        message.textContent = "Unable to open the top-level browser page: Codex browser capabilities are unavailable.";
         message.classList.add("error");
         return;
       }
@@ -37,9 +37,9 @@
       try {
         const result = await window.openai.openExternal({ href: browserUrl.href });
         if (result?.isError) throw new Error("openExternal failed");
-        message.textContent = "Trace Graph 已在 Codex 内置浏览器中打开。";
+        message.textContent = "The Trace Graph is open in the Codex in-app browser.";
       } catch {
-        message.textContent = "无法打开顶级浏览器页面，请检查 Codex 浏览器权限。";
+        message.textContent = "Unable to open the top-level browser page. Check Codex browser permissions.";
         message.classList.add("error");
       }
     }

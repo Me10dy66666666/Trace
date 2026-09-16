@@ -177,6 +177,16 @@ test("loads the Trace Graph from the top-level browser data service", async () =
   assert.doesNotMatch(html, /window\\.openai|window\\.parent|postMessage|MCP Apps host bridge/);
 });
 
+test("uses Pastlane branding and English frontend labels", async () => {
+  const { html } = await loadUi();
+
+  assert.match(html, /<title>Pastlane · Project Trace Graph<\/title>/);
+  assert.match(html, /const PROJECT_NAME = "Pastlane"/);
+  assert.match(html, /node-card-label">Update Notes<\/span>/);
+  assert.match(html, />Overview<\/button>/);
+  assert.doesNotMatch(html, /更新说明|概览/);
+});
+
 test("opens Trace Card details after a stationary click in the standalone browser", async () => {
   const { root, html } = await loadUi();
   assert.ok(root.viewport);
